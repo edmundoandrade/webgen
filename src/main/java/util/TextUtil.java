@@ -15,7 +15,6 @@ public class TextUtil {
 	}
 
 	public String removeDiacritics(String text) {
-		return Normalizer.normalize(text, Normalizer.Form.NFD).replaceAll(
-				"[^\\p{ASCII}]", "");
+		return Normalizer.normalize(text, Normalizer.Form.NFD).replaceAll("[^\\p{ASCII}]", "");
 	}
 }
