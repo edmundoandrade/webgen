@@ -17,7 +17,7 @@ public class WebInterfaceTest {
 
 	@Before
 	public void setUp() throws IOException {
-		webInterface = new WebInterface(getSpecification("/web-interface-specification.xml"), "en", new File("target/web-templates"), null);
+		webInterface = new WebInterface(getSpecification("/web-interface-specification.wiki"), "en", new File("target/web-templates"), null);
 		webInterface.generateArtifacts();
 	}
 
@@ -80,8 +80,16 @@ public class WebInterfaceTest {
 	@Test
 	public void generateActions() {
 		String content = webInterface.getArtifacts().get("Main page").getContent();
-		assertThat(content, containsString("<a href=\"action_one.html\">Action one<a>"));
-		assertThat(content, containsString("<a href=\"acao_alfa.html\">Ação alfa<a>"));
+		assertThat(content, containsString("<a href=\"action_one.html\">Action one</a>"));
+		assertThat(content, containsString("<a href=\"acao_alfa.html\">Ação alfa</a>"));
+	}
+
+	@Test
+	public void generateLists() {
+		String content = webInterface.getArtifacts().get("Another page").getContent();
+		assertThat(content, containsString("<ul id=\"my_list_list\" aria-labelledby=\"my_list_list_heading\"><h2 id=\"my_list_list_heading\">My list</h2>"));
+		assertThat(content, containsString("<ul id=\"_list\" aria-labelledby=\"_list_heading\">"));
+		assertThat(content, not(containsString("></h2>")));
 	}
 
 	@Test
@@ -91,7 +99,7 @@ public class WebInterfaceTest {
 		assertThat(content, containsString("<title>WebGen report</title>"));
 		assertThat(content, containsString("<thead><tr><th>Title</th><th>Data inputs</th><th>Data outputs</th></tr></thead>"));
 		assertThat(content, containsString("<tr><td><a href=\"main_page.html\">Main page</a></td><td>9</td><td>7</td></tr>"));
-		assertThat(content, containsString("<tr><td><a href=\"another_page.html\">Another page</a></td><td>0</td><td>0</td></tr>"));
+		assertThat(content, containsString("<tr><td><a href=\"another_page.html\">Another page</a></td><td>0</td><td>2</td></tr>"));
 	}
 
 	@Test
@@ -116,6 +124,6 @@ public class WebInterfaceTest {
 	}
 
 	private String getSpecification(String resourceName) {
-		return new TextUtil().extractText(getClass().getResourceAsStream(resourceName));
+		return new StreamUtil().extractText(getClass().getResourceAsStream(resourceName));
 	}
 }

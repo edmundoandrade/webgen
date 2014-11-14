@@ -4,7 +4,7 @@ import java.io.InputStream;
 import java.text.Normalizer;
 import java.util.Scanner;
 
-public class TextUtil {
+class StreamUtil {
 	public String extractText(InputStream stream) {
 		Scanner scanner = new Scanner(stream, "UTF-8");
 		try {

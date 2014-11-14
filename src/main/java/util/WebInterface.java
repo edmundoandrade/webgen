@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -19,6 +20,7 @@ import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
 import org.w3c.dom.Document;
+import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 public class WebInterface {
@@ -28,6 +30,7 @@ public class WebInterface {
 	private static final String[] FILTER_MARKS = { "{filter}", "{filtro}" };
 	private static final String[] TABLE_MARKS = { "{table}", "{tabela}" };
 	private static final String[] ACTION_MARKS = { "{action}", "{ação}" };
+	private static final String[] LIST_MARKS = { "{list}", "{lista}" };
 	private static final String LINE_BREAK = System.getProperty("line.separator");
 	private String specification;
 	private String defaultLanguage;
@@ -39,9 +42,23 @@ public class WebInterface {
 	private int numberOfDataInputs;
 	private int numberOfDataOutputs;
 	private Stack<String> parentContext = new Stack<String>();
-	private TextUtil textUtil = new TextUtil();
+	private StreamUtil textUtil = new StreamUtil();
 	private List<String> components = new ArrayList<String>();
 
+	/**
+	 * WebInterface to be expressed into a set of web artifacts according to the
+	 * specification and the optional data.
+	 * 
+	 * @param specification
+	 *            the specification, expressed as wiki text, used to generate
+	 *            the web artifacts
+	 * @param defaultLanguage
+	 *            the main language used to express the web artifacts
+	 * @param templatesDir
+	 *            the directory used to override the built-in templates
+	 * @param data
+	 *            optional data expressed as XML
+	 */
 	public WebInterface(String specification, String defaultLanguage, File templatesDir, String data) {
 		this.specification = specification;
 		this.defaultLanguage = defaultLanguage;
@@ -55,6 +72,29 @@ public class WebInterface {
 		} catch (Exception e) {
 			throw new IllegalArgumentException(e);
 		}
+	}
+
+	/**
+	 * WebInterface to be expressed into a set of web artifacts according to the
+	 * specification and the optional data.
+	 * 
+	 * @param specificationStream
+	 *            the stream used to load specification, expressed as wiki text,
+	 *            will be closed after this operation
+	 * @param defaultLanguage
+	 *            the main language used to express the web artifacts
+	 * @param templatesDir
+	 *            the directory used to override the built-in templates
+	 * @param dataStream
+	 *            the stream used to load data, expressed as XML, will be closed
+	 *            after this operation
+	 */
+	public WebInterface(InputStream specificationStream, String defaultLanguage, File templatesDir, InputStream dataStream) {
+		this(extractText(specificationStream), defaultLanguage, templatesDir, extractText(dataStream));
+	}
+
+	private static String extractText(InputStream stream) {
+		return new StreamUtil().extractText(stream);
 	}
 
 	public void generateArtifacts() {
@@ -122,6 +162,7 @@ public class WebInterface {
 		content = apply(section(line), content, contentPlace);
 		content = apply(filter(line), content, contentPlace);
 		content = apply(table(line), content, contentPlace);
+		content = apply(list(line), content, contentPlace);
 		content = apply(action(line), content, contentPlace);
 		artifact.setContent(content);
 		artifact.setDataInputs(numberOfDataInputs);
@@ -168,7 +209,6 @@ public class WebInterface {
 	}
 
 	private String generateFilter(String title, String[] fields) {
-		numberOfDataInputs++; // submit input present inside filter template
 		String id = createId(title + "_filter");
 		String contentPlace = pushContext(id);
 		return getTemplate("filter.html").replaceAll("\\$\\{id\\}", id).replaceAll("\\$\\{title\\}", title)
@@ -185,7 +225,7 @@ public class WebInterface {
 	private String generateTable(String title, String[] fields) {
 		String id = createId(title + "_table");
 		return getTemplate("table.html").replaceAll("\\$\\{id\\}", id).replaceAll("\\$\\{title\\}", title).replaceAll("\\$\\{content_header\\}", generateTableHeader(fields))
-				.replaceAll("\\$\\{content\\}", buildTableData(id, fields));
+				.replace("${content}", buildTableData(id, fields));
 	}
 
 	private String buildTableData(String id, String[] fields) {
@@ -194,7 +234,7 @@ public class WebInterface {
 		String content = "";
 		XPath xpath = XPathFactory.newInstance().newXPath();
 		try {
-			NodeList rows = (NodeList) xpath.compile("//" + id + "/*").evaluate(data, XPathConstants.NODESET);
+			NodeList rows = (NodeList) xpath.compile("//" + standardId(currentArtifact.getTitle()) + "/" + id + "/*").evaluate(data, XPathConstants.NODESET);
 			for (int i = 0; i < rows.getLength(); i++) {
 				String[] cells = new String[fields.length];
 				int j = 0;
@@ -208,6 +248,48 @@ public class WebInterface {
 			throw new IllegalArgumentException(e);
 		}
 		return content;
+	}
+
+	private String list(String line) {
+		String parametro = parametro(line, LIST_MARKS);
+		if (parametro == null)
+			return "";
+		return generateList(parametro);
+	}
+
+	private String generateList(String title) {
+		numberOfDataOutputs++;
+		String id = createId(title + "_list");
+		return getTemplate("list.html").replaceAll("\\$\\{id\\}", id).replaceAll("\\$\\{title\\}", title).replace("${content}", buildListData(id));
+	}
+
+	private String buildListData(String id) {
+		if (data == null)
+			return "";
+		String content = "";
+		XPath xpath = XPathFactory.newInstance().newXPath();
+		try {
+			NodeList rows = (NodeList) xpath.compile("//" + standardId(currentArtifact.getTitle()) + "/" + id + "/*").evaluate(data, XPathConstants.NODESET);
+			for (int i = 0; i < rows.getLength(); i++) {
+				Node item = rows.item(i).getFirstChild();
+				content += generateListItem(item.getTextContent(), attributeClass(item)) + LINE_BREAK;
+			}
+		} catch (XPathExpressionException e) {
+			throw new IllegalArgumentException(e);
+		}
+		return content;
+	}
+
+	private String attributeClass(Node item) {
+		if ("#cdata-section".equals(item.getNodeName())) {
+			item = item.getParentNode();
+		}
+		if (!item.hasAttributes())
+			return "";
+		Node node = item.getAttributes().getNamedItem("class");
+		if (node == null)
+			return "";
+		return " " + node.getNodeValue();
 	}
 
 	private String generateInputFields(String[] fields) {
@@ -268,6 +350,13 @@ public class WebInterface {
 		return template.replaceAll("\\$\\{title\\}", title);
 	}
 
+	private String generateListItem(String item, String attributeClass) {
+		String template = getTemplate("list-item.html");
+		if (template.contains(ID_PLACE))
+			template = template.replaceAll("\\$\\{id\\}", createId(item));
+		return template.replaceAll("\\$\\{content\\}", item).replaceAll("\\$\\{class\\}", attributeClass);
+	}
+
 	private String getTemplate(String fileName) {
 		File templateFile = new File(templatesDir, fileName);
 		if (templateFile.exists())
@@ -307,7 +396,7 @@ public class WebInterface {
 
 	private void removeAllEmptyCaptions() {
 		for (WebArtifact artifact : artifacts.values()) {
-			artifact.setContent(artifact.getContent().replaceAll("<legend></legend>", "").replaceAll("<caption></caption>", ""));
+			artifact.setContent(artifact.getContent().replaceAll("<legend></legend>", "").replaceAll("<caption></caption>", "").replaceAll("<h2[^>]*></h2>", ""));
 		}
 	}
 
