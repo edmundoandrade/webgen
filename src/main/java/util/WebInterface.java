@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Stack;
+import java.util.regex.Matcher;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.xpath.XPath;
@@ -26,11 +27,6 @@ import org.w3c.dom.NodeList;
 public class WebInterface {
 	private static final String ID_PLACE = "${id}";
 	private static final String CONTENT_PLACE = "${content}";
-	private static final String[] SECTION_MARKS = { "{section}", "{seção}" };
-	private static final String[] FILTER_MARKS = { "{filter}", "{filtro}" };
-	private static final String[] TABLE_MARKS = { "{table}", "{tabela}" };
-	private static final String[] ACTION_MARKS = { "{action}", "{ação}" };
-	private static final String[] LIST_MARKS = { "{list}", "{lista}" };
 	private static final String LINE_BREAK = System.getProperty("line.separator");
 	private String specification;
 	private String defaultLanguage;
@@ -159,11 +155,7 @@ public class WebInterface {
 		updateLevel(line);
 		String contentPlace = parentContext.peek();
 		String content = artifact.getContent();
-		content = apply(section(line), content, contentPlace);
-		content = apply(filter(line), content, contentPlace);
-		content = apply(table(line), content, contentPlace);
-		content = apply(list(line), content, contentPlace);
-		content = apply(action(line), content, contentPlace);
+		content = apply(component(line), content, contentPlace);
 		artifact.setContent(content);
 		artifact.setDataInputs(numberOfDataInputs);
 		artifact.setDataOutputs(numberOfDataOutputs);
@@ -186,46 +178,28 @@ public class WebInterface {
 	}
 
 	private String apply(String component, String parent, String place) {
+		if (component.toLowerCase().contains("</button>"))
+			numberOfDataInputs++;
+		if (component.toLowerCase().contains("</ul>"))
+			numberOfDataOutputs++;
 		return parent.replace(place, component + place);
 	}
 
-	private String section(String line) {
-		String parametro = parametro(line, SECTION_MARKS);
-		if (parametro == null)
-			return "";
-		return generateSection(parametro) + LINE_BREAK;
-	}
-
-	private String generateSection(String title) {
-		String id = createId(title);
-		return getTemplate("section.html").replaceAll("\\$\\{id\\}", id).replaceAll("\\$\\{title\\}", title).replaceAll("\\$\\{content\\}", pushContext(id));
-	}
-
-	private String filter(String line) {
-		String[] parametros = parametros(line, FILTER_MARKS, "\\|");
-		if (parametros == null)
-			return "";
-		return generateFilter("", parametros) + LINE_BREAK;
-	}
-
-	private String generateFilter(String title, String[] fields) {
-		String id = createId(title + "_filter");
-		String contentPlace = pushContext(id);
-		return getTemplate("filter.html").replaceAll("\\$\\{id\\}", id).replaceAll("\\$\\{title\\}", title)
-				.replaceAll("\\$\\{content\\}", generateInputFields(fields) + contentPlace);
-	}
-
-	private String table(String line) {
-		String[] parametros = parametros(line, TABLE_MARKS, "\\|");
-		if (parametros == null)
-			return "";
-		return generateTable("", parametros) + LINE_BREAK;
-	}
-
-	private String generateTable(String title, String[] fields) {
-		String id = createId(title + "_table");
-		return getTemplate("table.html").replaceAll("\\$\\{id\\}", id).replaceAll("\\$\\{title\\}", title).replaceAll("\\$\\{content_header\\}", generateTableHeader(fields))
-				.replace("${content}", buildTableData(id, fields));
+	private String component(String line) {
+		if (WebComponent.matches(line)) {
+			WebComponent component = new WebComponent(line);
+			String id = createId(component);
+			String contentPlace = pushContext(id);
+			String content = getTemplate(standardId(component.getType()) + ".html").replaceAll("\\$\\{id\\}", id).replaceAll("\\$\\{title\\}", component.getTitle());
+			if (content.toLowerCase().contains("</table>"))
+				return content.replaceAll("\\$\\{content_header\\}", Matcher.quoteReplacement(generateTableHeader(component.getParameters()))).replaceAll("\\$\\{content\\}",
+						Matcher.quoteReplacement(buildTableData(id, component.getParameters())));
+			else if (content.toLowerCase().contains("</ul>"))
+				return content.replaceAll("\\$\\{content\\}", Matcher.quoteReplacement(buildListData(id)));
+			else
+				return content.replaceAll("\\$\\{content\\}", Matcher.quoteReplacement(generateInputFields(component.getParameters()) + contentPlace)) + LINE_BREAK;
+		}
+		return "";
 	}
 
 	private String buildTableData(String id, String[] fields) {
@@ -248,19 +222,6 @@ public class WebInterface {
 			throw new IllegalArgumentException(e);
 		}
 		return content;
-	}
-
-	private String list(String line) {
-		String parametro = parametro(line, LIST_MARKS);
-		if (parametro == null)
-			return "";
-		return generateList(parametro);
-	}
-
-	private String generateList(String title) {
-		numberOfDataOutputs++;
-		String id = createId(title + "_list");
-		return getTemplate("list.html").replaceAll("\\$\\{id\\}", id).replaceAll("\\$\\{title\\}", title).replace("${content}", buildListData(id));
 	}
 
 	private String buildListData(String id) {
@@ -316,19 +277,6 @@ public class WebInterface {
 		return result + "</tr>";
 	}
 
-	private String action(String line) {
-		String parametro = parametro(line, ACTION_MARKS);
-		if (parametro == null)
-			return "";
-		return generateAction(parametro) + LINE_BREAK;
-	}
-
-	private String generateAction(String title) {
-		numberOfDataInputs++;
-		String id = createId(title);
-		return getTemplate("action.html").replaceAll("\\$\\{id\\}", id).replaceAll("\\$\\{title\\}", title);
-	}
-
 	private String generateTextInput(String title, String value) {
 		numberOfDataInputs++;
 		String id = createId(title);
@@ -357,7 +305,7 @@ public class WebInterface {
 		return template.replaceAll("\\$\\{content\\}", item).replaceAll("\\$\\{class\\}", attributeClass);
 	}
 
-	private String getTemplate(String fileName) {
+	public String getTemplate(String fileName) {
 		File templateFile = new File(templatesDir, fileName);
 		if (templateFile.exists())
 			try {
@@ -366,26 +314,6 @@ public class WebInterface {
 				throw new IllegalArgumentException(e);
 			}
 		return textUtil.extractText(getClass().getResourceAsStream("/templates/" + fileName));
-	}
-
-	private String parametro(String line, String[] marks) {
-		for (String mark : marks) {
-			int pos = line.toLowerCase().indexOf(mark);
-			if (pos >= 0)
-				return line.substring(pos + mark.length()).trim();
-		}
-		return null;
-	}
-
-	private String[] parametros(String line, String[] marks, String delimiterRegex) {
-		String parametro = parametro(line, marks);
-		if (parametro == null)
-			return null;
-		String[] result = parametro.split(delimiterRegex);
-		for (int i = 0; i < result.length; i++) {
-			result[i] = result[i].trim();
-		}
-		return result;
 	}
 
 	private void removeAllContentPlaces() {
@@ -400,14 +328,27 @@ public class WebInterface {
 		}
 	}
 
-	private String pushContext(String id) {
+	public String pushContext(String id) {
 		String newPlace = "${content" + id + "}";
 		parentContext.push(newPlace);
 		return "\\" + newPlace;
 	}
 
-	private String createId(String context) {
+	public String createId(String context) {
 		String id = standardId(context);
+		if (components.contains(id)) {
+			int seq = 1;
+			while (components.contains(id + "_" + seq)) {
+				seq++;
+			}
+			id += "_" + seq;
+		}
+		components.add(id);
+		return id;
+	}
+
+	public String createId(WebComponent component) {
+		String id = standardId(component.getTitle().isEmpty() ? "_" + component.getType() : component.getTitle());
 		if (components.contains(id)) {
 			int seq = 1;
 			while (components.contains(id + "_" + seq)) {
@@ -442,7 +383,7 @@ public class WebInterface {
 		}
 	}
 
-	private String standardId(String context) {
+	public String standardId(String context) {
 		return textUtil.removeDiacritics(context.toLowerCase()).replaceAll(" ", "_");
 	}
 

@@ -1,17 +1,17 @@
 Any information put before first mark will be ignored.
 
 == Main page ==
-* {Section} Section A
-** {Filter} FInput1 | FInput2 | Filter input three
-*** {Ação} Filter
+* {Section Section A}
+** {Filter F} FInput1 | FInput2 | Filter input three
+*** {Action Filter}
 ** {Table} THeader1 | THeader2 | THeader3 | THeader4
-** {Action} Action one
-* {Seção} Seção X
-** {Filtro} FEntrada1 | Filtro entrada dois
-*** {Ação} Filtrar
+** {Action one}
+* {Seção Seção X}
+** {Filtro F} FEntrada1 | Filtro entrada dois
+*** {Ação Filtrar}
 ** {Tabela} TCab1 | TCab2 | TCab3
-** {Ação} Ação alfa
+** {Ação Ação alfa}
 
 == Another page ==
-* {List} My list
+* {List My list}
 * {List}

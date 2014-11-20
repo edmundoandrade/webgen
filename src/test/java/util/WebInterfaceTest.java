@@ -49,7 +49,7 @@ public class WebInterfaceTest {
 	@Test
 	public void generateFilters() {
 		String content = webInterface.getArtifacts().get("Main page").getContent();
-		assertThat(content, containsString("<form class=\"filter\" id=\"_filter\"><fieldset>"));
+		assertThat(content, containsString("<form class=\"filter\" id=\"f\"><fieldset>"));
 		assertThat(content, not(containsString("<legend></legend>")));
 	}
 
@@ -80,14 +80,14 @@ public class WebInterfaceTest {
 	@Test
 	public void generateActions() {
 		String content = webInterface.getArtifacts().get("Main page").getContent();
-		assertThat(content, containsString("<a href=\"action_one.html\">Action one</a>"));
-		assertThat(content, containsString("<a href=\"acao_alfa.html\">Ação alfa</a>"));
+		assertThat(content, containsString("<a href=\"one.html\"><button type=\"button\">one</button></a>"));
+		assertThat(content, containsString("<a href=\"acao_alfa.html\"><button type=\"button\">Ação alfa</button></a>"));
 	}
 
 	@Test
 	public void generateLists() {
 		String content = webInterface.getArtifacts().get("Another page").getContent();
-		assertThat(content, containsString("<ul id=\"my_list_list\" aria-labelledby=\"my_list_list_heading\"><h2 id=\"my_list_list_heading\">My list</h2>"));
+		assertThat(content, containsString("<ul id=\"my_list\" aria-labelledby=\"my_list_heading\"><h2 id=\"my_list_heading\">My list</h2>"));
 		assertThat(content, containsString("<ul id=\"_list\" aria-labelledby=\"_list_heading\">"));
 		assertThat(content, not(containsString("></h2>")));
 	}
