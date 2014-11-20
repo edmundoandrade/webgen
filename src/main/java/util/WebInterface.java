@@ -190,7 +190,8 @@ public class WebInterface {
 			WebComponent component = new WebComponent(line);
 			String id = createId(component);
 			String contentPlace = pushContext(id);
-			String content = getTemplate(standardId(component.getType()) + ".html").replaceAll("\\$\\{id\\}", id).replaceAll("\\$\\{title\\}", component.getTitle());
+			String content = getTemplate(standardId(component.getType()) + ".html").replaceAll("\\$\\{id\\}", id).replaceAll("\\$\\{title\\}",
+					Matcher.quoteReplacement(component.getTitle()));
 			if (content.toLowerCase().contains("</table>"))
 				return content.replaceAll("\\$\\{content_header\\}", Matcher.quoteReplacement(generateTableHeader(component.getParameters()))).replaceAll("\\$\\{content\\}",
 						Matcher.quoteReplacement(buildTableData(id, component.getParameters())));
@@ -331,7 +332,7 @@ public class WebInterface {
 	public String pushContext(String id) {
 		String newPlace = "${content" + id + "}";
 		parentContext.push(newPlace);
-		return "\\" + newPlace;
+		return newPlace;
 	}
 
 	public String createId(String context) {
