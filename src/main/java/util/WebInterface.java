@@ -32,6 +32,7 @@ public class WebInterface {
 	private String defaultLanguage;
 	private File templatesDir;
 	private Document data;
+	private String webGenReportTitle = "WebGen report";
 	private Map<String, WebArtifact> artifacts = new HashMap<String, WebArtifact>();
 	private Map<String, WebArtifact> reports = new HashMap<String, WebArtifact>();
 	private WebArtifact currentArtifact;
@@ -111,9 +112,9 @@ public class WebInterface {
 	}
 
 	private void generateReports() {
-		String data = "<webgen_report>" + LINE_BREAK;
+		String data = "<" + standardId(getWebGenReportTitle()) + ">" + LINE_BREAK;
 		data += buildArtifactTableData() + LINE_BREAK;
-		data += "</webgen_report>";
+		data += "</" + standardId(getWebGenReportTitle()) + ">";
 		WebInterface webReports = new WebInterface(getTemplate("webgen-reporting-specification.wiki"), defaultLanguage, templatesDir, data);
 		webReports.generateArtifacts();
 		reports = webReports.getArtifacts();
@@ -401,5 +402,13 @@ public class WebInterface {
 			generateReports();
 		}
 		return reports;
+	}
+
+	public String getWebGenReportTitle() {
+		return webGenReportTitle;
+	}
+
+	public void setWebGenReportTitle(String webGenReportTitle) {
+		this.webGenReportTitle = webGenReportTitle;
 	}
 }
