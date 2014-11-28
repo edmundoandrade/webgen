@@ -1,8 +1,8 @@
-Any information put before first mark will be ignored.
+Any information put before first mark below has one aim: human reading.
 
 == Main page ==
 * {Section Section A}
-** {Filter F} FInput1 | FInput2 | Filter input three
+** {Filter F} FInput1 | FInput2 | Document type
 *** {Action Filter}
 ** {Table} THeader1 | THeader2 | THeader3 | THeader4
 ** {Action one}
@@ -12,6 +12,8 @@ Any information put before first mark will be ignored.
 ** {Tabela} TCab1 | TCab2 | TCab3
 ** {Ação Ação alfa}
 
-== Another page ==
+== New official document ==
+* {Form Basic information} Name | Document type | Owner
+** {Action insert document}
 * {List My list}
 * {List}

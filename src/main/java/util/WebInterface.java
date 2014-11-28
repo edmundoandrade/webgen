@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.xpath.XPath;
@@ -25,9 +26,13 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 public class WebInterface {
+	private static final String LINE_BREAK = System.getProperty("line.separator");
 	private static final String ID_PLACE = "${id}";
 	private static final String CONTENT_PLACE = "${content}";
-	private static final String LINE_BREAK = System.getProperty("line.separator");
+	private static final String PROP_DESCRIPTION = "description";
+	private static final String PROP_PLACEHOLDER = "placeholder";
+	private static final String PROP_INPUT = "input";
+	private static final String DEFAULT_DATA_CONTEXT = "default";
 	private String specification;
 	private String defaultLanguage;
 	private File templatesDir;
@@ -41,23 +46,30 @@ public class WebInterface {
 	private Stack<String> parentContext = new Stack<String>();
 	private StreamUtil textUtil = new StreamUtil();
 	private List<String> components = new ArrayList<String>();
+	private Map<String, String> dataBehavior;
+	private Map<String, String> dataAlias;
+	private String currentField;
 
 	/**
 	 * WebInterface to be expressed into a set of web artifacts according to the
 	 * specification and the optional data.
 	 * 
 	 * @param specification
-	 *            the specification, expressed as wiki text, used to generate
-	 *            the web artifacts
+	 *            the specification, expressed as wiki text, for generating the
+	 *            web artifacts
+	 * @param dataDictionary
+	 *            optional data dictionary for configuring the behavior of data
+	 *            entry and/or presenting
 	 * @param defaultLanguage
-	 *            the main language used to express the web artifacts
+	 *            the main language in which the web artifacts will be generated
 	 * @param templatesDir
 	 *            the directory used to override the built-in templates
 	 * @param data
-	 *            optional data expressed as XML
+	 *            optional (sample) data expressed as XML
 	 */
-	public WebInterface(String specification, String defaultLanguage, File templatesDir, String data) {
+	public WebInterface(String specification, String dataDictionary, String defaultLanguage, File templatesDir, String data) {
 		this.specification = specification;
+		loadDataBehavior(dataDictionary);
 		this.defaultLanguage = defaultLanguage;
 		this.templatesDir = templatesDir;
 		if (data == null) {
@@ -71,23 +83,75 @@ public class WebInterface {
 		}
 	}
 
+	private void loadDataBehavior(String dataDictionary) {
+		dataBehavior = new HashMap<String, String>();
+		dataAlias = new HashMap<String, String>();
+		if (dataDictionary == null)
+			return;
+		currentField = null;
+		for (String line : getLines(dataDictionary)) {
+			if (!newField(line) && currentField != null) {
+				updateField(currentField, line);
+			}
+		}
+	}
+
+	private boolean newField(String line) {
+		if (line.matches("\\s*\\*[^\\*].*")) {
+			String fieldDefinition = line.substring(line.indexOf('*') + 1).trim();
+			String[] metadata;
+			if (fieldDefinition.contains("=")) {
+				metadata = fieldDefinition.split("=");
+				currentField = metadata[0].toLowerCase().trim();
+				addDataAlias(currentField, metadata[1].toLowerCase().trim());
+			} else if (fieldDefinition.contains(":")) {
+				metadata = fieldDefinition.split(":", 2);
+				currentField = metadata[0].toLowerCase().trim();
+				addDataBehavior(currentField, PROP_DESCRIPTION, metadata[1].trim());
+			} else {
+				currentField = fieldDefinition.toLowerCase().trim();
+			}
+			return true;
+		}
+		return false;
+	}
+
+	private void updateField(String field, String line) {
+		Matcher matcher = Pattern.compile("\\s*\\*\\*[^\\*](.*):(.*)").matcher(line);
+		if (matcher.find()) {
+			addDataBehavior(field, matcher.group(1).trim(), matcher.group(2).trim());
+		}
+	}
+
+	private void addDataAlias(String field, String sourceField) {
+		if (!resolveField(sourceField).equals(field))
+			dataAlias.put(field, sourceField);
+	}
+
+	private void addDataBehavior(String field, String property, String value) {
+		dataBehavior.put(field + ":" + property, value);
+	}
+
 	/**
 	 * WebInterface to be expressed into a set of web artifacts according to the
 	 * specification and the optional data.
 	 * 
 	 * @param specificationStream
-	 *            the stream used to load specification, expressed as wiki text,
+	 *            stream for loading the specification expressed as wiki text,
 	 *            will be closed after this operation
+	 * @param dataDicionaryStream
+	 *            optional stream for loading the data dictionary expressed as
+	 *            wiki text, will be closed after this operation
 	 * @param defaultLanguage
-	 *            the main language used to express the web artifacts
+	 *            the main language in which the web artifacts will be generated
 	 * @param templatesDir
-	 *            the directory used to override the built-in templates
+	 *            the directory for overriding the built-in templates
 	 * @param dataStream
-	 *            the stream used to load data, expressed as XML, will be closed
-	 *            after this operation
+	 *            the stream for loading (sample) data expressed as XML, will be
+	 *            closed after this operation
 	 */
-	public WebInterface(InputStream specificationStream, String defaultLanguage, File templatesDir, InputStream dataStream) {
-		this(extractText(specificationStream), defaultLanguage, templatesDir, extractText(dataStream));
+	public WebInterface(InputStream specificationStream, InputStream dataDicionaryStream, String defaultLanguage, File templatesDir, InputStream dataStream) {
+		this(extractText(specificationStream), extractText(dataDicionaryStream), defaultLanguage, templatesDir, extractText(dataStream));
 	}
 
 	private static String extractText(InputStream stream) {
@@ -101,13 +165,14 @@ public class WebInterface {
 		numberOfDataOutputs = 0;
 		components.clear();
 		parentContext.clear();
-		for (String line : specification.split("\r\n?|\n")) {
+		for (String line : getLines(specification)) {
 			if (!newArtifact(line) && currentArtifact != null) {
 				updateArtifact(currentArtifact, line);
 			}
 		}
 		removeAllContentPlaces();
 		removeAllEmptyCaptions();
+		removeAllEmptyAttributes();
 		reports = null;
 	}
 
@@ -115,7 +180,7 @@ public class WebInterface {
 		String data = "<" + standardId(getWebGenReportTitle()) + ">" + LINE_BREAK;
 		data += buildArtifactTableData() + LINE_BREAK;
 		data += "</" + standardId(getWebGenReportTitle()) + ">";
-		WebInterface webReports = new WebInterface(getTemplate("webgen-reporting-specification.wiki"), defaultLanguage, templatesDir, data);
+		WebInterface webReports = new WebInterface(getTemplate("webgen-reporting-specification.wiki"), null, defaultLanguage, templatesDir, data);
 		webReports.generateArtifacts();
 		reports = webReports.getArtifacts();
 	}
@@ -195,26 +260,26 @@ public class WebInterface {
 					Matcher.quoteReplacement(component.getTitle()));
 			if (content.toLowerCase().contains("</table>"))
 				return content.replaceAll("\\$\\{content_header\\}", Matcher.quoteReplacement(generateTableHeader(component.getParameters()))).replaceAll("\\$\\{content\\}",
-						Matcher.quoteReplacement(buildTableData(id, component.getParameters())));
+						Matcher.quoteReplacement(buildTableData(id, component)));
 			else if (content.toLowerCase().contains("</ul>"))
-				return content.replaceAll("\\$\\{content\\}", Matcher.quoteReplacement(buildListData(id)));
+				return content.replaceAll("\\$\\{content\\}", Matcher.quoteReplacement(buildComponentData(id, component, "class", " ")));
 			else
 				return content.replaceAll("\\$\\{content\\}", Matcher.quoteReplacement(generateInputFields(component.getParameters()) + contentPlace)) + LINE_BREAK;
 		}
 		return "";
 	}
 
-	private String buildTableData(String id, String[] fields) {
+	private String buildTableData(String id, WebComponent component) {
 		if (data == null)
 			return "";
 		String content = "";
 		XPath xpath = XPathFactory.newInstance().newXPath();
 		try {
-			NodeList rows = (NodeList) xpath.compile("//" + standardId(currentArtifact.getTitle()) + "/" + id + "/*").evaluate(data, XPathConstants.NODESET);
+			NodeList rows = dataRows(id, component, xpath);
 			for (int i = 0; i < rows.getLength(); i++) {
-				String[] cells = new String[fields.length];
+				String[] cells = new String[component.getParameters().length];
 				int j = 0;
-				for (String field : fields) {
+				for (String field : component.getParameters()) {
 					cells[j] = xpath.compile(standardId(field) + "/text()").evaluate(rows.item(i));
 					j++;
 				}
@@ -226,16 +291,16 @@ public class WebInterface {
 		return content;
 	}
 
-	private String buildListData(String id) {
+	private String buildComponentData(String id, WebComponent component, String attributeName, String attributePrefix) {
 		if (data == null)
 			return "";
 		String content = "";
 		XPath xpath = XPathFactory.newInstance().newXPath();
 		try {
-			NodeList rows = (NodeList) xpath.compile("//" + standardId(currentArtifact.getTitle()) + "/" + id + "/*").evaluate(data, XPathConstants.NODESET);
+			NodeList rows = dataRows(id, component, xpath);
 			for (int i = 0; i < rows.getLength(); i++) {
 				Node item = rows.item(i).getFirstChild();
-				content += generateListItem(item.getTextContent(), attributeClass(item)) + LINE_BREAK;
+				content += generateComponentItem(component.getType() + "-item", item.getTextContent(), attributeName, attribute(item, attributeName, attributePrefix)) + LINE_BREAK;
 			}
 		} catch (XPathExpressionException e) {
 			throw new IllegalArgumentException(e);
@@ -243,22 +308,45 @@ public class WebInterface {
 		return content;
 	}
 
-	private String attributeClass(Node item) {
-		if ("#cdata-section".equals(item.getNodeName())) {
+	private String generateComponentItem(String templateName, String item, String attributeName, String attributeValue) {
+		String template = getTemplate(templateName + ".html");
+		if (template.contains(ID_PLACE))
+			template = template.replaceAll("\\$\\{id\\}", createId(item));
+		return template.replaceAll("\\$\\{title\\}", Matcher.quoteReplacement(item)).replaceAll("\\$\\{" + attributeName + "\\}", Matcher.quoteReplacement(attributeValue));
+	}
+
+	private NodeList dataRows(String id, WebComponent component, XPath xpath) throws XPathExpressionException {
+		boolean checkTitle = !component.getTitle().isEmpty() && !id.equals(standardId(component.getTitle()));
+		NodeList rows = dataRows(currentArtifact.getTitle(), id, xpath);
+		if (rows.getLength() == 0 && checkTitle)
+			rows = dataRows(currentArtifact.getTitle(), component.getTitle(), xpath);
+		if (rows.getLength() == 0)
+			rows = dataRows(DEFAULT_DATA_CONTEXT, id, xpath);
+		if (rows.getLength() == 0 && checkTitle)
+			rows = dataRows(DEFAULT_DATA_CONTEXT, component.getTitle(), xpath);
+		return rows;
+	}
+
+	private NodeList dataRows(String dataContext, String dataId, XPath xpath) throws XPathExpressionException {
+		return (NodeList) xpath.compile("//" + standardId(dataContext) + "/" + dataId + "/*").evaluate(data, XPathConstants.NODESET);
+	}
+
+	private String attribute(Node item, String attributeName, String prefix) {
+		if ("#cdata-section".equals(item.getNodeName()) || "#text".equals(item.getNodeName())) {
 			item = item.getParentNode();
 		}
 		if (!item.hasAttributes())
 			return "";
-		Node node = item.getAttributes().getNamedItem("class");
+		Node node = item.getAttributes().getNamedItem(attributeName);
 		if (node == null)
 			return "";
-		return " " + node.getNodeValue();
+		return prefix + node.getNodeValue();
 	}
 
 	private String generateInputFields(String[] fields) {
 		String result = "";
 		for (String field : fields) {
-			result += generateTextInput(field, "") + LINE_BREAK;
+			result += generateTextInput(field, getDescription(field), getPlaceHolder(field), "") + LINE_BREAK;
 		}
 		return result;
 	}
@@ -279,10 +367,23 @@ public class WebInterface {
 		return result + "</tr>";
 	}
 
-	private String generateTextInput(String title, String value) {
+	private String generateTextInput(String field, String description, String placeHolder, String value) {
 		numberOfDataInputs++;
+		String title = field;
 		String id = createId(title);
-		return getTemplate("text-input.html").replaceAll("\\$\\{id\\}", id).replaceAll("\\$\\{title\\}", title).replaceAll("\\$\\{value\\}", value);
+		String templateName = getInput(field);
+		return getTemplate(templateName + ".html")
+				.replaceAll("\\$\\{id\\}", quote(id))
+				.replaceAll("\\$\\{title\\}", title)
+				.replaceAll("\\$\\{description\\}", quote(description))
+				.replaceAll("\\$\\{placeholder\\}", quote(placeHolder))
+				.replaceAll("\\$\\{value\\}", quote(value))
+				.replaceAll("\\$\\{data:" + templateName + "-item\\}",
+						Matcher.quoteReplacement(buildComponentData(id, new WebComponent("{" + templateName + " " + title + "}"), "value", "")));
+	}
+
+	private String quote(String text) {
+		return text.replaceAll("\"", "&quot;");
 	}
 
 	private String generateTableHeaderCell(String title) {
@@ -298,13 +399,6 @@ public class WebInterface {
 		if (template.contains(ID_PLACE))
 			template = template.replaceAll("\\$\\{id\\}", createId(title));
 		return template.replaceAll("\\$\\{title\\}", title);
-	}
-
-	private String generateListItem(String item, String attributeClass) {
-		String template = getTemplate("list-item.html");
-		if (template.contains(ID_PLACE))
-			template = template.replaceAll("\\$\\{id\\}", createId(item));
-		return template.replaceAll("\\$\\{content\\}", item).replaceAll("\\$\\{class\\}", attributeClass);
 	}
 
 	public String getTemplate(String fileName) {
@@ -327,6 +421,12 @@ public class WebInterface {
 	private void removeAllEmptyCaptions() {
 		for (WebArtifact artifact : artifacts.values()) {
 			artifact.setContent(artifact.getContent().replaceAll("<legend></legend>", "").replaceAll("<caption></caption>", "").replaceAll("<h2[^>]*></h2>", ""));
+		}
+	}
+
+	private void removeAllEmptyAttributes() {
+		for (WebArtifact artifact : artifacts.values()) {
+			artifact.setContent(artifact.getContent().replaceAll("\\s*[a-z]*=\"\"", ""));
 		}
 	}
 
@@ -360,6 +460,29 @@ public class WebInterface {
 		}
 		components.add(id);
 		return id;
+	}
+
+	private String getDescription(String field) {
+		return behavior(field, PROP_DESCRIPTION, "");
+	}
+
+	private String getPlaceHolder(String field) {
+		return behavior(field, PROP_PLACEHOLDER, "");
+	}
+
+	private String getInput(String field) {
+		return behavior(field, PROP_INPUT, "text-input");
+	}
+
+	private String behavior(String field, String property, String defaultValue) {
+		String value = dataBehavior.get(resolveField(field.toLowerCase()) + ":" + property);
+		return value == null ? defaultValue : value;
+	}
+
+	private String resolveField(String field) {
+		if (dataAlias.containsKey(field))
+			return resolveField(dataAlias.get(field));
+		return field;
 	}
 
 	public void saveArtifactsToDir(File dir) throws IOException {
@@ -410,5 +533,9 @@ public class WebInterface {
 
 	public void setWebGenReportTitle(String webGenReportTitle) {
 		this.webGenReportTitle = webGenReportTitle;
+	}
+
+	private String[] getLines(String text) {
+		return text.split("\r\n?|\n");
 	}
 }

@@ -1,0 +1,40 @@
+<data>
+	<main_page>
+		<_table>
+			<row>
+				<theader1>NONONONX</theader1>
+				<theader2>NONONONY</theader2>
+				<theader3>NONONONZ</theader3>
+				<theader4><![CDATA[<a href="#section_a">Click</a>]]></theader4>
+			</row>
+			<row>
+				<theader1>HOHOHOHA</theader1>
+				<theader2>HOHOHOHB</theader2>
+				<theader3>HOHOHOHC</theader3>
+				<theader4><![CDATA[<a href="#secao_x">Click</a>]]></theader4>
+			</row>
+		</_table>
+		<_tabela>
+			<row>
+				<tcab1><![CDATA[<a href="#">Item 1</a>]]></tcab1>
+				<tcab2>NONONONY</tcab2>
+				<tcab3>NONONONZ</tcab3>
+			</row>
+		</_tabela>
+	</main_page>
+
+	<new_official_document>
+		<my_list>
+			<item class="title"><![CDATA[<strong>Sample data</strong>]]></item>
+			<item><![CDATA[See the file <em>sample-data.xml</em> to configure sample data presented here!]]></item>
+		</my_list>
+	</new_official_document>
+
+	<default>
+		<document_type>
+			<item>(Undefined document)</item>
+			<item value="int">Internal document</item>
+			<item value="fed">Federal document</item>
+		</document_type>
+	</default>
+</data>
