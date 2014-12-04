@@ -301,7 +301,8 @@ public class WebInterface {
 			String separator = "";
 			for (int i = 0; i < rows.getLength(); i++) {
 				Node item = rows.item(i).getFirstChild();
-				content += separator + generateComponentItem(component.getType() + "-item", item.getTextContent(), attributeName, attribute(item, attributeName, attributePrefix));
+				content += separator
+						+ generateComponentItem(standardId(component.getType() + "-item"), item.getTextContent(), attributeName, attribute(item, attributeName, attributePrefix));
 				separator = LINE_BREAK;
 			}
 		} catch (XPathExpressionException e) {
