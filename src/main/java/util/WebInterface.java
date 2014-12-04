@@ -108,9 +108,8 @@ public class WebInterface {
 				metadata = fieldDefinition.split(":", 2);
 				currentField = metadata[0].toLowerCase().trim();
 				addDataBehavior(currentField, PROP_DESCRIPTION, metadata[1].trim());
-			} else {
+			} else
 				currentField = fieldDefinition.toLowerCase().trim();
-			}
 			return true;
 		}
 		return false;
@@ -165,11 +164,10 @@ public class WebInterface {
 		numberOfDataOutputs = 0;
 		components.clear();
 		parentContext.clear();
-		for (String line : getLines(specification)) {
-			if (!newArtifact(line) && currentArtifact != null) {
+		for (String line : getLines(specification))
+			if (!newArtifact(line) && currentArtifact != null)
 				updateArtifact(currentArtifact, line);
-			}
-		}
+		autoMenu();
 		removeAllContentPlaces();
 		removeAllEmptyCaptions();
 		removeAllEmptyAttributes();
@@ -276,6 +274,7 @@ public class WebInterface {
 		XPath xpath = XPathFactory.newInstance().newXPath();
 		try {
 			NodeList rows = dataRows(id, component, xpath);
+			String separator = "";
 			for (int i = 0; i < rows.getLength(); i++) {
 				String[] cells = new String[component.getParameters().length];
 				int j = 0;
@@ -283,7 +282,8 @@ public class WebInterface {
 					cells[j] = xpath.compile(standardId(field) + "/text()").evaluate(rows.item(i));
 					j++;
 				}
-				content += generateTableBodyRow(cells) + LINE_BREAK;
+				content += separator + generateTableBodyRow(cells);
+				separator += LINE_BREAK;
 			}
 		} catch (XPathExpressionException e) {
 			throw new IllegalArgumentException(e);
@@ -298,9 +298,11 @@ public class WebInterface {
 		XPath xpath = XPathFactory.newInstance().newXPath();
 		try {
 			NodeList rows = dataRows(id, component, xpath);
+			String separator = "";
 			for (int i = 0; i < rows.getLength(); i++) {
 				Node item = rows.item(i).getFirstChild();
-				content += generateComponentItem(component.getType() + "-item", item.getTextContent(), attributeName, attribute(item, attributeName, attributePrefix)) + LINE_BREAK;
+				content += separator + generateComponentItem(component.getType() + "-item", item.getTextContent(), attributeName, attribute(item, attributeName, attributePrefix));
+				separator = LINE_BREAK;
 			}
 		} catch (XPathExpressionException e) {
 			throw new IllegalArgumentException(e);
@@ -332,9 +334,8 @@ public class WebInterface {
 	}
 
 	private String attribute(Node item, String attributeName, String prefix) {
-		if ("#cdata-section".equals(item.getNodeName()) || "#text".equals(item.getNodeName())) {
+		if ("#cdata-section".equals(item.getNodeName()) || "#text".equals(item.getNodeName()))
 			item = item.getParentNode();
-		}
 		if (!item.hasAttributes())
 			return "";
 		Node node = item.getAttributes().getNamedItem(attributeName);
@@ -345,25 +346,22 @@ public class WebInterface {
 
 	private String generateInputFields(String[] fields) {
 		String result = "";
-		for (String field : fields) {
+		for (String field : fields)
 			result += generateTextInput(field, getDescription(field), getPlaceHolder(field), "") + LINE_BREAK;
-		}
 		return result;
 	}
 
 	private String generateTableHeader(String[] fields) {
 		String result = "<tr>";
-		for (String field : fields) {
+		for (String field : fields)
 			result += generateTableHeaderCell(field);
-		}
 		return result + "</tr>";
 	}
 
 	private String generateTableBodyRow(String[] cells) {
 		String result = "<tr>";
-		for (String cell : cells) {
+		for (String cell : cells)
 			result += generateTableBodyCell(cell);
-		}
 		return result + "</tr>";
 	}
 
@@ -409,25 +407,38 @@ public class WebInterface {
 			} catch (FileNotFoundException e) {
 				throw new IllegalArgumentException(e);
 			}
-		return textUtil.extractText(getClass().getResourceAsStream("/templates/" + fileName));
+		InputStream templateStream = WebInterface.class.getResourceAsStream("/templates/" + fileName);
+		if (templateStream == null)
+			throw new IllegalArgumentException("Template resource not found: " + fileName);
+		return textUtil.extractText(templateStream);
+	}
+
+	private void autoMenu() {
+		String autoMenu = "";
+		String separator = "";
+		for (WebArtifact artifact : artifacts.values()) {
+			autoMenu += separator
+					+ getTemplate("menu-item.html").replaceAll("\\$\\{url\\}", Matcher.quoteReplacement(artifact.getFileName())).replaceAll("\\$\\{title\\}",
+							Matcher.quoteReplacement(artifact.getTitle()));
+			separator = LINE_BREAK;
+		}
+		for (WebArtifact artifact : artifacts.values())
+			artifact.setContent(artifact.getContent().replaceAll("\\$\\{automenu:menu-item\\}", Matcher.quoteReplacement(autoMenu)));
 	}
 
 	private void removeAllContentPlaces() {
-		for (WebArtifact artifact : artifacts.values()) {
+		for (WebArtifact artifact : artifacts.values())
 			artifact.setContent(artifact.getContent().replaceAll("\\s*\\$\\{content[^\\}]*\\}", ""));
-		}
 	}
 
 	private void removeAllEmptyCaptions() {
-		for (WebArtifact artifact : artifacts.values()) {
+		for (WebArtifact artifact : artifacts.values())
 			artifact.setContent(artifact.getContent().replaceAll("<legend></legend>", "").replaceAll("<caption></caption>", "").replaceAll("<h2[^>]*></h2>", ""));
-		}
 	}
 
 	private void removeAllEmptyAttributes() {
-		for (WebArtifact artifact : artifacts.values()) {
+		for (WebArtifact artifact : artifacts.values())
 			artifact.setContent(artifact.getContent().replaceAll("\\s*[a-z]*=\"\"", ""));
-		}
 	}
 
 	public String pushContext(String id) {
@@ -440,9 +451,8 @@ public class WebInterface {
 		String id = standardId(context);
 		if (components.contains(id)) {
 			int seq = 1;
-			while (components.contains(id + "_" + seq)) {
+			while (components.contains(id + "_" + seq))
 				seq++;
-			}
 			id += "_" + seq;
 		}
 		components.add(id);
@@ -453,9 +463,8 @@ public class WebInterface {
 		String id = standardId(component.getTitle().isEmpty() ? "_" + component.getType() : component.getTitle());
 		if (components.contains(id)) {
 			int seq = 1;
-			while (components.contains(id + "_" + seq)) {
+			while (components.contains(id + "_" + seq))
 				seq++;
-			}
 			id += "_" + seq;
 		}
 		components.add(id);
@@ -494,9 +503,8 @@ public class WebInterface {
 
 	public void saveReportsToDir(File dir) throws IOException {
 		dir.mkdirs();
-		for (WebArtifact report : getReports().values()) {
+		for (WebArtifact report : getReports().values())
 			save(report, dir);
-		}
 	}
 
 	private void save(WebArtifact artifact, File dir) throws IOException {
@@ -521,9 +529,8 @@ public class WebInterface {
 	}
 
 	public Map<String, WebArtifact> getReports() {
-		if (reports == null) {
+		if (reports == null)
 			generateReports();
-		}
 		return reports;
 	}
 

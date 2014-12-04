@@ -1,6 +1,7 @@
 Any information put before first mark below has one aim: human reading.
 
 == Main page ==
+* {Menu}
 * {Section Section A}
 ** {Filter F} FInput1 | FInput2 | Document type
 *** {Action Filter}
@@ -13,7 +14,7 @@ Any information put before first mark below has one aim: human reading.
 ** {Ação Ação alfa}
 
 == New official document ==
+* {Menu}
 * {Form Basic information} Name | Document type | Owner
 ** {Action insert document}
 * {List My list}
-* {List}

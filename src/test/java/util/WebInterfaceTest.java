@@ -84,8 +84,7 @@ public class WebInterfaceTest {
 
 	private String documentTypeOptions() {
 		String lineSep = System.getProperty("line.separator");
-		return "<option>(Undefined document)</option>" + lineSep + "<option value=\"int\">Internal document</option>" + lineSep + "<option value=\"fed\">Federal document</option>"
-				+ lineSep;
+		return "<option>(Undefined document)</option>" + lineSep + "<option value=\"int\">Internal document</option>" + lineSep + "<option value=\"fed\">Federal document</option>";
 	}
 
 	@Test
@@ -101,8 +100,19 @@ public class WebInterfaceTest {
 		assertThat(content, containsString("<ul id=\"my_list\" aria-labelledby=\"my_list_heading\"><h2 id=\"my_list_heading\">My list</h2>"));
 		assertThat(content, containsString("<li class=\" title\"><strong>Sample data</strong></li>"));
 		assertThat(content, containsString("<li>See the file <em>sample-data.xml</em> to configure sample data presented here!</li>"));
-		assertThat(content, containsString("<ul id=\"_list\" aria-labelledby=\"_list_heading\">"));
 		assertThat(content, not(containsString("></h2>")));
+	}
+
+	@Test
+	public void generateMenuItems() throws IOException {
+		String menuItem1 = "<li><a href=\"main_page.html\">Main page</a></li>";
+		String menuItem2 = "<li><a href=\"new_official_document.html\">New official document</a></li>";
+		String content = webInterface.getArtifacts().get("Main page").getContent();
+		assertThat(content, containsString(menuItem1));
+		assertThat(content, containsString(menuItem2));
+		content = webInterface.getArtifacts().get("New official document").getContent();
+		assertThat(content, containsString(menuItem1));
+		assertThat(content, containsString(menuItem2));
 	}
 
 	@Test
@@ -111,7 +121,7 @@ public class WebInterfaceTest {
 		assertThat(content, containsString("<html lang=\"en\">"));
 		assertThat(content, containsString("<title>WebGen report</title>"));
 		assertThat(content, containsString("<thead><tr><th>Title</th><th>Data inputs</th><th>Data outputs</th></tr></thead>"));
-		assertThat(content, containsString("<tr><td><a href=\"main_page.html\">Main page</a></td><td>9</td><td>7</td></tr>"));
+		assertThat(content, containsString("<tr><td><a href=\"main_page.html\">Main page</a></td><td>9</td><td>8</td></tr>"));
 		assertThat(content, containsString("<tr><td><a href=\"new_official_document.html\">New official document</a></td><td>4</td><td>2</td></tr>"));
 	}
 
@@ -134,6 +144,11 @@ public class WebInterfaceTest {
 		reportFile.delete();
 		webInterface.saveReportsToDir(dir);
 		assertThat(reportFile.exists(), is(true));
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void getInvalidTemplate() throws IOException {
+		webInterface.getTemplate("invalid-template");
 	}
 
 	private String getSpecification(String resourceName) {
