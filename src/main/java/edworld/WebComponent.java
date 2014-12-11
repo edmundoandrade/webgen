@@ -1,4 +1,5 @@
-package util;
+// This open source code is distributed without warranties according to the license published at http://www.apache.org/licenses/LICENSE-2.0
+package edworld;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -35,9 +36,8 @@ public class WebComponent {
 		if (info.isEmpty())
 			return new String[0];
 		String[] result = info.split(PARAMETER_DELIMITER_REGEX);
-		for (int i = 0; i < result.length; i++) {
+		for (int i = 0; i < result.length; i++)
 			result[i] = result[i].trim();
-		}
 		return result;
 	}
 

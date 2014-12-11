@@ -1,10 +1,11 @@
-package util;
+// This open source code is distributed without warranties according to the license published at http://www.apache.org/licenses/LICENSE-2.0
+package edworld.util;
 
 import java.io.InputStream;
 import java.text.Normalizer;
 import java.util.Scanner;
 
-class StreamUtil {
+public class StreamUtil {
 	public String extractText(InputStream stream) {
 		Scanner scanner = new Scanner(stream, "UTF-8");
 		try {

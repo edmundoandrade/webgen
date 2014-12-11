@@ -1,4 +1,5 @@
-package util;
+// This open source code is distributed without warranties according to the license published at http://www.apache.org/licenses/LICENSE-2.0
+package edworld;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -25,6 +26,8 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import edworld.util.StreamUtil;
+
 public class WebInterface {
 	private static final String LINE_BREAK = System.getProperty("line.separator");
 	private static final String ID_PLACE = "${id}";
@@ -38,8 +41,8 @@ public class WebInterface {
 	private File templatesDir;
 	private Document data;
 	private String webGenReportTitle = "WebGen report";
-	private Map<String, WebArtifact> artifacts = new HashMap<String, WebArtifact>();
-	private Map<String, WebArtifact> reports = new HashMap<String, WebArtifact>();
+	private List<WebArtifact> artifacts = new ArrayList<WebArtifact>();
+	private List<WebArtifact> reports = new ArrayList<WebArtifact>();
 	private WebArtifact currentArtifact;
 	private int numberOfDataInputs;
 	private int numberOfDataOutputs;
@@ -51,15 +54,12 @@ public class WebInterface {
 	private String currentField;
 
 	/**
-	 * WebInterface to be expressed into a set of web artifacts according to the
-	 * specification and the optional data.
+	 * WebInterface to be expressed into a set of web artifacts according to the specification and the optional data.
 	 * 
 	 * @param specification
-	 *            the specification, expressed as wiki text, for generating the
-	 *            web artifacts
+	 *            the specification, expressed as wiki text, for generating the web artifacts
 	 * @param dataDictionary
-	 *            optional data dictionary for configuring the behavior of data
-	 *            entry and/or presenting
+	 *            optional data dictionary for configuring the behavior of data entry and/or presenting
 	 * @param defaultLanguage
 	 *            the main language in which the web artifacts will be generated
 	 * @param templatesDir
@@ -89,11 +89,9 @@ public class WebInterface {
 		if (dataDictionary == null)
 			return;
 		currentField = null;
-		for (String line : getLines(dataDictionary)) {
-			if (!newField(line) && currentField != null) {
+		for (String line : getLines(dataDictionary))
+			if (!newField(line) && currentField != null)
 				updateField(currentField, line);
-			}
-		}
 	}
 
 	private boolean newField(String line) {
@@ -117,9 +115,8 @@ public class WebInterface {
 
 	private void updateField(String field, String line) {
 		Matcher matcher = Pattern.compile("\\s*\\*\\*[^\\*](.*):(.*)").matcher(line);
-		if (matcher.find()) {
+		if (matcher.find())
 			addDataBehavior(field, matcher.group(1).trim(), matcher.group(2).trim());
-		}
 	}
 
 	private void addDataAlias(String field, String sourceField) {
@@ -132,22 +129,18 @@ public class WebInterface {
 	}
 
 	/**
-	 * WebInterface to be expressed into a set of web artifacts according to the
-	 * specification and the optional data.
+	 * WebInterface to be expressed into a set of web artifacts according to the specification and the optional data.
 	 * 
 	 * @param specificationStream
-	 *            stream for loading the specification expressed as wiki text,
-	 *            will be closed after this operation
+	 *            stream for loading the specification expressed as wiki text, will be closed after this operation
 	 * @param dataDicionaryStream
-	 *            optional stream for loading the data dictionary expressed as
-	 *            wiki text, will be closed after this operation
+	 *            optional stream for loading the data dictionary expressed as wiki text, will be closed after this operation
 	 * @param defaultLanguage
 	 *            the main language in which the web artifacts will be generated
 	 * @param templatesDir
 	 *            the directory for overriding the built-in templates
 	 * @param dataStream
-	 *            the stream for loading (sample) data expressed as XML, will be
-	 *            closed after this operation
+	 *            the stream for loading (sample) data expressed as XML, will be closed after this operation
 	 */
 	public WebInterface(InputStream specificationStream, InputStream dataDicionaryStream, String defaultLanguage, File templatesDir, InputStream dataStream) {
 		this(extractText(specificationStream), extractText(dataDicionaryStream), defaultLanguage, templatesDir, extractText(dataStream));
@@ -185,7 +178,7 @@ public class WebInterface {
 
 	private String buildArtifactTableData() {
 		String xml = "<_table>" + LINE_BREAK;
-		for (WebArtifact artifact : artifacts.values()) {
+		for (WebArtifact artifact : artifacts) {
 			xml += "<artifact>" + LINE_BREAK;
 			xml += "<title>" + encodeCharData(addLink(artifact.getTitle(), artifact.getFileName())) + "</title>" + LINE_BREAK;
 			xml += "<data_inputs>" + artifact.getDataInputs() + "</data_inputs>" + LINE_BREAK;
@@ -204,7 +197,7 @@ public class WebInterface {
 		if (line.matches("\\s*==[^=].*")) {
 			String title = line.replaceAll("==", "").trim();
 			currentArtifact = new WebArtifact(title, generateWebPage(title, defaultLanguage), standardId(title) + ".html");
-			artifacts.put(title, currentArtifact);
+			artifacts.add(currentArtifact);
 			numberOfDataInputs = 0;
 			numberOfDataOutputs = 0;
 			components.clear();
@@ -417,28 +410,28 @@ public class WebInterface {
 	private void autoMenu() {
 		String autoMenu = "";
 		String separator = "";
-		for (WebArtifact artifact : artifacts.values()) {
+		for (WebArtifact artifact : artifacts) {
 			autoMenu += separator
 					+ getTemplate("menu-item.html").replaceAll("\\$\\{url\\}", Matcher.quoteReplacement(artifact.getFileName())).replaceAll("\\$\\{title\\}",
 							Matcher.quoteReplacement(artifact.getTitle()));
 			separator = LINE_BREAK;
 		}
-		for (WebArtifact artifact : artifacts.values())
+		for (WebArtifact artifact : artifacts)
 			artifact.setContent(artifact.getContent().replaceAll("\\$\\{automenu:menu-item\\}", Matcher.quoteReplacement(autoMenu)));
 	}
 
 	private void removeAllContentPlaces() {
-		for (WebArtifact artifact : artifacts.values())
+		for (WebArtifact artifact : artifacts)
 			artifact.setContent(artifact.getContent().replaceAll("\\s*\\$\\{content[^\\}]*\\}", ""));
 	}
 
 	private void removeAllEmptyCaptions() {
-		for (WebArtifact artifact : artifacts.values())
+		for (WebArtifact artifact : artifacts)
 			artifact.setContent(artifact.getContent().replaceAll("<legend></legend>", "").replaceAll("<caption></caption>", "").replaceAll("<h2[^>]*></h2>", ""));
 	}
 
 	private void removeAllEmptyAttributes() {
-		for (WebArtifact artifact : artifacts.values())
+		for (WebArtifact artifact : artifacts)
 			artifact.setContent(artifact.getContent().replaceAll("\\s*[a-z]*=\"\"", ""));
 	}
 
@@ -497,14 +490,13 @@ public class WebInterface {
 
 	public void saveArtifactsToDir(File dir) throws IOException {
 		dir.mkdirs();
-		for (WebArtifact artifact : artifacts.values()) {
+		for (WebArtifact artifact : artifacts)
 			save(artifact, dir);
-		}
 	}
 
 	public void saveReportsToDir(File dir) throws IOException {
 		dir.mkdirs();
-		for (WebArtifact report : getReports().values())
+		for (WebArtifact report : getReports())
 			save(report, dir);
 	}
 
@@ -525,11 +517,11 @@ public class WebInterface {
 		return "<![CDATA[" + text + "]]>";
 	}
 
-	public Map<String, WebArtifact> getArtifacts() {
+	public List<WebArtifact> getArtifacts() {
 		return artifacts;
 	}
 
-	public Map<String, WebArtifact> getReports() {
+	public List<WebArtifact> getReports() {
 		if (reports == null)
 			generateReports();
 		return reports;

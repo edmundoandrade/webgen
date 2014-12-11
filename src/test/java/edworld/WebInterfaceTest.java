@@ -1,4 +1,5 @@
-package util;
+// This open source code is distributed without warranties according to the license published at http://www.apache.org/licenses/LICENSE-2.0
+package edworld;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
@@ -12,7 +13,11 @@ import java.io.IOException;
 import org.junit.Before;
 import org.junit.Test;
 
+import edworld.util.StreamUtil;
+
 public class WebInterfaceTest {
+	private static final int MAIN_PAGE = 0;
+	private static final int NEW_OFFICIAL_DOCUMENT = 1;
 	private WebInterface webInterface;
 
 	@Before
@@ -24,16 +29,15 @@ public class WebInterfaceTest {
 
 	@Test
 	public void ignoreAnyInformationBeforeFirstMark() {
-		for (WebArtifact artifact : webInterface.getArtifacts().values()) {
+		for (WebArtifact artifact : webInterface.getArtifacts())
 			assertThat(artifact.getContent(), not(containsString("Any information")));
-		}
 	}
 
 	@Test
 	public void generateWebPages() {
 		assertEquals(2, webInterface.getArtifacts().size());
-		String content1 = webInterface.getArtifacts().get("Main page").getContent();
-		String content2 = webInterface.getArtifacts().get("New official document").getContent();
+		String content1 = webInterface.getArtifacts().get(MAIN_PAGE).getContent();
+		String content2 = webInterface.getArtifacts().get(NEW_OFFICIAL_DOCUMENT).getContent();
 		assertThat(content1, containsString("<html lang=\"en\">"));
 		assertThat(content1, containsString("<title>Main page</title>"));
 		assertThat(content2, containsString("<html lang=\"en\">"));
@@ -42,21 +46,21 @@ public class WebInterfaceTest {
 
 	@Test
 	public void generateSections() {
-		String content = webInterface.getArtifacts().get("Main page").getContent();
+		String content = webInterface.getArtifacts().get(MAIN_PAGE).getContent();
 		assertThat(content, containsString("<section id=\"section_a\" aria-labelledby=\"section_a_heading\"><h2 id=\"section_a_heading\">Section A</h2>"));
 		assertThat(content, containsString("<section id=\"secao_x\" aria-labelledby=\"secao_x_heading\"><h2 id=\"secao_x_heading\">Seção X</h2>"));
 	}
 
 	@Test
 	public void generateFilters() {
-		String content = webInterface.getArtifacts().get("Main page").getContent();
+		String content = webInterface.getArtifacts().get(MAIN_PAGE).getContent();
 		assertThat(content, containsString("<form class=\"filter\" id=\"f\"><fieldset>"));
 		assertThat(content, not(containsString("<legend></legend>")));
 	}
 
 	@Test
 	public void generateTables() {
-		String content = webInterface.getArtifacts().get("Main page").getContent();
+		String content = webInterface.getArtifacts().get(MAIN_PAGE).getContent();
 		assertThat(content, containsString("<table id=\"_table\">"));
 		assertThat(content, not(containsString("<caption></caption>")));
 		assertThat(content, containsString("<thead><tr><th>THeader1</th><th>THeader2</th><th>THeader3</th><th>THeader4</th></tr></thead>"));
@@ -68,14 +72,14 @@ public class WebInterfaceTest {
 
 	@Test
 	public void generateTextInputs() {
-		String content = webInterface.getArtifacts().get("Main page").getContent();
+		String content = webInterface.getArtifacts().get(MAIN_PAGE).getContent();
 		assertThat(content, containsString("<label>FInput1<input type=\"text\" id=\"finput1\"></label>"));
 		assertThat(content, containsString("<label>FInput2<select id=\"finput2\"></select></label>"));
 		assertThat(content, containsString("<label title=\"document &quot;classifier&quot; according to the international standards\">Document type<select id=\"document_type\">"
 				+ documentTypeOptions() + "</select></label>"));
 		assertThat(content, containsString("<label>FEntrada1<input type=\"text\" id=\"fentrada1\"></label>"));
 		assertThat(content, containsString("<label>Filtro entrada dois<input type=\"text\" id=\"filtro_entrada_dois\"></label>"));
-		content = webInterface.getArtifacts().get("New official document").getContent();
+		content = webInterface.getArtifacts().get(NEW_OFFICIAL_DOCUMENT).getContent();
 		assertThat(content, containsString("<label>Name<input type=\"text\" id=\"name\" placeholder=\"type the document's name or title\"></label>"));
 		assertThat(content, containsString("<label title=\"document &quot;classifier&quot; according to the international standards\">Document type<select id=\"document_type\">"
 				+ documentTypeOptions() + "</select></label>"));
@@ -89,14 +93,14 @@ public class WebInterfaceTest {
 
 	@Test
 	public void generateActions() {
-		String content = webInterface.getArtifacts().get("Main page").getContent();
+		String content = webInterface.getArtifacts().get(MAIN_PAGE).getContent();
 		assertThat(content, containsString("<a href=\"one.html\"><button type=\"button\">one</button></a>"));
 		assertThat(content, containsString("<a href=\"acao_alfa.html\"><button type=\"button\">Ação alfa</button></a>"));
 	}
 
 	@Test
 	public void generateLists() {
-		String content = webInterface.getArtifacts().get("New official document").getContent();
+		String content = webInterface.getArtifacts().get(NEW_OFFICIAL_DOCUMENT).getContent();
 		assertThat(content, containsString("<ul id=\"my_list\" aria-labelledby=\"my_list_heading\"><h2 id=\"my_list_heading\">My list</h2>"));
 		assertThat(content, containsString("<li class=\" title\"><strong>Sample data</strong></li>"));
 		assertThat(content, containsString("<li>See the file <em>sample-data.xml</em> to configure sample data presented here!</li>"));
@@ -107,17 +111,17 @@ public class WebInterfaceTest {
 	public void generateMenuItems() throws IOException {
 		String menuItem1 = "<li><a href=\"main_page.html\">Main page</a></li>";
 		String menuItem2 = "<li><a href=\"new_official_document.html\">New official document</a></li>";
-		String content = webInterface.getArtifacts().get("Main page").getContent();
+		String content = webInterface.getArtifacts().get(MAIN_PAGE).getContent();
 		assertThat(content, containsString(menuItem1));
 		assertThat(content, containsString(menuItem2));
-		content = webInterface.getArtifacts().get("New official document").getContent();
+		content = webInterface.getArtifacts().get(NEW_OFFICIAL_DOCUMENT).getContent();
 		assertThat(content, containsString(menuItem1));
 		assertThat(content, containsString(menuItem2));
 	}
 
 	@Test
 	public void generateReports() {
-		String content = webInterface.getReports().get("WebGen report").getContent();
+		String content = webInterface.getReports().get(0).getContent();
 		assertThat(content, containsString("<html lang=\"en\">"));
 		assertThat(content, containsString("<title>WebGen report</title>"));
 		assertThat(content, containsString("<thead><tr><th>Title</th><th>Data inputs</th><th>Data outputs</th></tr></thead>"));
