@@ -1,5 +1,5 @@
 // This open source code is distributed without warranties according to the license published at http://www.apache.org/licenses/LICENSE-2.0
-package edworld;
+package edworld.webgen;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
