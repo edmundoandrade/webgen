@@ -521,7 +521,7 @@ public class WebInterface {
 	}
 
 	public String standardId(String context) {
-		return textUtil.removeDiacritics(context.toLowerCase()).replaceAll(" ", "_");
+		return textUtil.removeDiacritics(context.toLowerCase()).replaceAll(" ", "_").replaceAll("[.,:;'\"?!]", "");
 	}
 
 	private String encodeCharData(String text) {

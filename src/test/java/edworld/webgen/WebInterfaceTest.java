@@ -46,9 +46,11 @@ public class WebInterfaceTest {
 
 	@Test
 	public void generateSections() {
-		String content = webInterface.getArtifacts().get(MAIN_PAGE).getContent();
-		assertThat(content, containsString("<section id=\"section_a\" aria-labelledby=\"section_a_heading\"><h2 id=\"section_a_heading\">Section A</h2>"));
-		assertThat(content, containsString("<section id=\"secao_x\" aria-labelledby=\"secao_x_heading\"><h2 id=\"secao_x_heading\">Seção X</h2>"));
+		String content1 = webInterface.getArtifacts().get(MAIN_PAGE).getContent();
+		assertThat(content1, containsString("<section id=\"section_a\" aria-labelledby=\"section_a_heading\"><h2 id=\"section_a_heading\">Section A</h2>"));
+		assertThat(content1, containsString("<section id=\"secao_x\" aria-labelledby=\"secao_x_heading\"><h2 id=\"secao_x_heading\">Seção X</h2>"));
+		String content2 = webInterface.getArtifacts().get(NEW_OFFICIAL_DOCUMENT).getContent();
+		assertThat(content2, containsString("<section id=\"dashboard\" aria-labelledby=\"dashboard_heading\"><h2 id=\"dashboard_heading\">Dashboard</h2>"));
 	}
 
 	@Test
@@ -96,6 +98,12 @@ public class WebInterfaceTest {
 		String content = webInterface.getArtifacts().get(MAIN_PAGE).getContent();
 		assertThat(content, containsString("<a href=\"one.html\"><button type=\"button\">one</button></a>"));
 		assertThat(content, containsString("<a href=\"acao_alfa.html\"><button type=\"button\">Ação alfa</button></a>"));
+	}
+
+	@Test
+	public void generateNumericalLabels() {
+		String content = webInterface.getArtifacts().get(NEW_OFFICIAL_DOCUMENT).getContent();
+		assertThat(content, containsString("<span id=\"0_is_the_goal_for_the_other_customers_indicator\">0: is the goal for the 'other customers' indicator</span>"));
 	}
 
 	@Test
