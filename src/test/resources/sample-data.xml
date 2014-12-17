@@ -28,6 +28,7 @@
 			<item class="title"><![CDATA[<strong>Sample data</strong>]]></item>
 			<item><![CDATA[See the file <em>sample-data.xml</em> to configure sample data presented here!]]></item>
 		</my_list>
+		<happy_customers>57</happy_customers>
 	</new_official_document>
 
 	<default>

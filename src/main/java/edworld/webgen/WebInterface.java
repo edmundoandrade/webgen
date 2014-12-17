@@ -249,6 +249,8 @@ public class WebInterface {
 			String contentPlace = pushContext(id);
 			String content = getTemplate(standardId(component.getType()) + ".html").replaceAll("\\$\\{id\\}", id).replaceAll("\\$\\{title\\}",
 					Matcher.quoteReplacement(component.getTitle()));
+			if (content.contains("${data}"))
+				content = content.replaceAll("\\$\\{data\\}", Matcher.quoteReplacement(data(id)));
 			if (content.toLowerCase().contains("</table>"))
 				return content.replaceAll("\\$\\{content_header\\}", Matcher.quoteReplacement(generateTableHeader(component.getParameters()))).replaceAll("\\$\\{content\\}",
 						Matcher.quoteReplacement(buildTableData(id, component)));
@@ -258,6 +260,15 @@ public class WebInterface {
 				return content.replaceAll("\\$\\{content\\}", Matcher.quoteReplacement(generateInputFields(component.getParameters()) + contentPlace)) + LINE_BREAK;
 		}
 		return "";
+	}
+
+	private String data(String dataId) {
+		XPath xpath = XPathFactory.newInstance().newXPath();
+		try {
+			return xpath.compile("//" + standardId(currentArtifact.getTitle()) + "/" + dataId + "/text()").evaluate(data);
+		} catch (XPathExpressionException e) {
+			throw new IllegalArgumentException(e);
+		}
 	}
 
 	private String buildTableData(String id, WebComponent component) {

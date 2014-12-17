@@ -99,6 +99,14 @@ public class WebInterfaceTest {
 	}
 
 	@Test
+	public void generateDataReferences() {
+		String content = webInterface.getArtifacts().get(NEW_OFFICIAL_DOCUMENT).getContent();
+		assertThat(content, not(containsString("${data}")));
+		assertThat(content, containsString(">57</text>"));
+		assertThat(content, containsString("></text>"));
+	}
+
+	@Test
 	public void generateLists() {
 		String content = webInterface.getArtifacts().get(NEW_OFFICIAL_DOCUMENT).getContent();
 		assertThat(content, containsString("<ul id=\"my_list\" aria-labelledby=\"my_list_heading\"><h2 id=\"my_list_heading\">My list</h2>"));

@@ -18,3 +18,5 @@ Any information put before first mark below has one aim: human reading.
 * {Form Basic information} Name | Document type | Owner
 ** {Action insert document}
 * {List My list}
+* {Circle Happy customers}
+* {Circle Other customers}
