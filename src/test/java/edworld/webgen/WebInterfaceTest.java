@@ -45,6 +45,13 @@ public class WebInterfaceTest {
 	}
 
 	@Test
+	public void generateFreeContent() {
+		String content = webInterface.getArtifacts().get(MAIN_PAGE).getContent();
+		assertThat(content, containsString("<hr>free HTML content<hr>"));
+		assertThat(content, not(containsString("* <hr>free HTML content<hr>")));
+	}
+
+	@Test
 	public void generateSections() {
 		String content1 = webInterface.getArtifacts().get(MAIN_PAGE).getContent();
 		assertThat(content1, containsString("<section id=\"section_a\" aria-labelledby=\"section_a_heading\"><h2 id=\"section_a_heading\">Section A</h2>"));
@@ -67,7 +74,7 @@ public class WebInterfaceTest {
 		assertThat(content, not(containsString("<caption></caption>")));
 		assertThat(content, containsString("<thead><tr><th>THeader1</th><th>THeader2</th><th>THeader3</th><th>THeader4</th></tr></thead>"));
 		assertThat(content, containsString("<tr><td>NONONONX</td><td>NONONONY</td><td>NONONONZ</td><td><a href=\"#section_a\">Click</a></td></tr>"));
-		assertThat(content, containsString("<tr><td>HOHOHOHA</td><td>HOHOHOHB</td><td>HOHOHOHC</td><td><a href=\"#secao_x\">Click</a></td></tr>"));
+		assertThat(content, containsString("<tr><td>HOHOHOHA</td><td class=\"row\" data-title=\"t2\">HOHOHOHB</td><td>HOHOHOHC</td><td><a href=\"#secao_x\">Click</a></td></tr>"));
 		assertThat(content, containsString("<thead><tr><th>TCab1</th><th>TCab2</th><th>TCab3</th></tr></thead>"));
 		assertThat(content, containsString("<tr><td><a href=\"#\">Item 1</a></td><td>NONONONY</td><td>NONONONZ</td></tr>"));
 	}
@@ -118,7 +125,7 @@ public class WebInterfaceTest {
 	public void generateLists() {
 		String content = webInterface.getArtifacts().get(NEW_OFFICIAL_DOCUMENT).getContent();
 		assertThat(content, containsString("<ul id=\"my_list\" aria-labelledby=\"my_list_heading\"><h2 id=\"my_list_heading\">My list</h2>"));
-		assertThat(content, containsString("<li class=\" title\"><strong>Sample data</strong></li>"));
+		assertThat(content, containsString("<li class=\"title\"><strong>Sample data</strong></li>"));
 		assertThat(content, containsString("<li>See the file <em>sample-data.xml</em> to configure sample data presented here!</li>"));
 		assertThat(content, not(containsString("></h2>")));
 	}
@@ -141,8 +148,8 @@ public class WebInterfaceTest {
 		assertThat(content, containsString("<html lang=\"en\">"));
 		assertThat(content, containsString("<title>WebGen report</title>"));
 		assertThat(content, containsString("<thead><tr><th>Title</th><th>Data inputs</th><th>Data outputs</th></tr></thead>"));
-		assertThat(content, containsString("<tr><td><a href=\"main_page.html\">Main page</a></td><td>9</td><td>8</td></tr>"));
-		assertThat(content, containsString("<tr><td><a href=\"new_official_document.html\">New official document</a></td><td>4</td><td>2</td></tr>"));
+		assertThat(content, containsString("<tr><td><a href=\"main_page.html\">Main page</a></td><td>9</td><td>9</td></tr>"));
+		assertThat(content, containsString("<tr><td><a href=\"new_official_document.html\">New official document</a></td><td>4</td><td>4</td></tr>"));
 	}
 
 	@Test

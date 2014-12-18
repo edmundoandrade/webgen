@@ -9,7 +9,7 @@
 			</row>
 			<row>
 				<theader1>HOHOHOHA</theader1>
-				<theader2>HOHOHOHB</theader2>
+				<theader2 class="row" data-title="t2">HOHOHOHB</theader2>
 				<theader3>HOHOHOHC</theader3>
 				<theader4><![CDATA[<a href="#secao_x">Click</a>]]></theader4>
 			</row>

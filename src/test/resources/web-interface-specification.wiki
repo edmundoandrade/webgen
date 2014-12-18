@@ -12,6 +12,7 @@ Any information put before first mark below has one aim: human reading.
 *** {Ação Filtrar}
 ** {Tabela} TCab1 | TCab2 | TCab3
 ** {Ação Ação alfa}
+* <hr>free HTML content<hr>
 
 == New official document ==
 * {Menu}

@@ -29,29 +29,33 @@ import org.w3c.dom.NodeList;
 import edworld.util.StreamUtil;
 
 public class WebInterface {
-	private static final String LINE_BREAK = System.getProperty("line.separator");
-	private static final String ID_PLACE = "${id}";
-	private static final String CONTENT_PLACE = "${content}";
-	private static final String PROP_DESCRIPTION = "description";
-	private static final String PROP_PLACEHOLDER = "placeholder";
-	private static final String PROP_INPUT = "input";
-	private static final String DEFAULT_DATA_CONTEXT = "default";
-	private String specification;
-	private String defaultLanguage;
-	private File templatesDir;
-	private Document data;
-	private String webGenReportTitle = "WebGen report";
-	private List<WebArtifact> artifacts = new ArrayList<WebArtifact>();
-	private List<WebArtifact> reports = new ArrayList<WebArtifact>();
-	private WebArtifact currentArtifact;
-	private int numberOfDataInputs;
-	private int numberOfDataOutputs;
-	private Stack<String> parentContext = new Stack<String>();
-	private StreamUtil textUtil = new StreamUtil();
-	private List<String> components = new ArrayList<String>();
-	private Map<String, String> dataBehavior;
-	private Map<String, String> dataAlias;
-	private String currentField;
+	protected static final String CONTENT_REGEX = "\\$\\{content\\}";
+	protected static final String ITEM_TEMPLATE_REGEX = "\\$\\{data:([^\\}]+)\\}";
+	protected static final String HEADER_TEMPLATE_REGEX = "\\$\\{header:([^\\}]+)\\}";
+	protected static final String ATTRIBUTE_REGEX = "\\$\\{attribute:([^\\}]+)\\}";
+	protected static final String LINE_BREAK = System.getProperty("line.separator");
+	protected static final String ID_PLACE = "${id}";
+	protected static final String CONTENT_PLACE = "${content}";
+	protected static final String PROP_DESCRIPTION = "description";
+	protected static final String PROP_PLACEHOLDER = "placeholder";
+	protected static final String PROP_INPUT = "input";
+	protected static final String DEFAULT_DATA_CONTEXT = "default";
+	protected String specification;
+	protected String defaultLanguage;
+	protected File templatesDir;
+	protected Document data;
+	protected String webGenReportTitle = "WebGen report";
+	protected List<WebArtifact> artifacts = new ArrayList<WebArtifact>();
+	protected List<WebArtifact> reports = new ArrayList<WebArtifact>();
+	protected WebArtifact currentArtifact;
+	protected int numberOfDataInputs;
+	protected int numberOfDataOutputs;
+	protected Stack<String> parentContext = new Stack<String>();
+	protected StreamUtil textUtil = new StreamUtil();
+	protected List<String> components = new ArrayList<String>();
+	protected Map<String, String> dataBehavior;
+	protected Map<String, String> dataAlias;
+	protected String currentField;
 
 	/**
 	 * WebInterface to be expressed into a set of web artifacts according to the specification and the optional data.
@@ -237,32 +241,32 @@ public class WebInterface {
 	private String apply(String component, String parent, String place) {
 		if (component.toLowerCase().contains("</button>"))
 			numberOfDataInputs++;
-		if (component.toLowerCase().contains("</ul>"))
-			numberOfDataOutputs++;
 		return parent.replace(place, component + place);
 	}
 
 	private String component(String line) {
-		if (WebComponent.matches(line)) {
-			WebComponent component = new WebComponent(line);
-			String id = createId(component);
-			String contentPlace = pushContext(id);
-			String content = getTemplate(standardId(component.getType()) + ".html").replaceAll("\\$\\{id\\}", id).replaceAll("\\$\\{title\\}",
-					Matcher.quoteReplacement(component.getTitle()));
-			if (content.contains("${data}"))
-				content = content.replaceAll("\\$\\{data\\}", Matcher.quoteReplacement(data(id)));
-			if (content.toLowerCase().contains("</table>"))
-				return content.replaceAll("\\$\\{content_header\\}", Matcher.quoteReplacement(generateTableHeader(component.getParameters()))).replaceAll("\\$\\{content\\}",
-						Matcher.quoteReplacement(buildTableData(id, component)));
-			else if (content.toLowerCase().contains("</ul>"))
-				return content.replaceAll("\\$\\{content\\}", Matcher.quoteReplacement(buildComponentData(id, component, "class", " ")));
-			else
-				return content.replaceAll("\\$\\{content\\}", Matcher.quoteReplacement(generateInputFields(component.getParameters()) + contentPlace)) + LINE_BREAK;
-		}
-		return "";
+		WebComponent component = new WebComponent(line);
+		String id = createId(component);
+		String contentPlace = pushContext(id);
+		String content = getTemplate(standardId(component.getType()) + ".html").replaceAll("\\$\\{id\\}", id).replaceAll("\\$\\{title\\}",
+				Matcher.quoteReplacement(component.getTitle()));
+		content = resolveHeader(id, component, content);
+		content = resolveData(id, component, content);
+		if (content.toLowerCase().contains("</form>"))
+			return content.replaceAll(CONTENT_REGEX, Matcher.quoteReplacement(generateInputFields(component.getParameters()) + contentPlace)) + LINE_BREAK;
+		else
+			return content.replaceAll(CONTENT_REGEX, Matcher.quoteReplacement(generateGenericContent(component.getParameters()) + contentPlace)) + LINE_BREAK;
+	}
+
+	private String generateGenericContent(String[] parameters) {
+		String result = "";
+		for (String parameter : parameters)
+			result += parameter + LINE_BREAK;
+		return result;
 	}
 
 	private String data(String dataId) {
+		numberOfDataOutputs++;
 		XPath xpath = XPathFactory.newInstance().newXPath();
 		try {
 			return xpath.compile("//" + standardId(currentArtifact.getTitle()) + "/" + dataId + "/text()").evaluate(data);
@@ -271,31 +275,54 @@ public class WebInterface {
 		}
 	}
 
-	private String buildTableData(String id, WebComponent component) {
-		if (data == null)
-			return "";
-		String content = "";
-		XPath xpath = XPathFactory.newInstance().newXPath();
-		try {
-			NodeList rows = dataRows(id, component, xpath);
-			String separator = "";
-			for (int i = 0; i < rows.getLength(); i++) {
-				String[] cells = new String[component.getParameters().length];
-				int j = 0;
-				for (String field : component.getParameters()) {
-					cells[j] = xpath.compile(standardId(field) + "/text()").evaluate(rows.item(i));
-					j++;
-				}
-				content += separator + generateTableBodyRow(cells);
-				separator += LINE_BREAK;
-			}
-		} catch (XPathExpressionException e) {
-			throw new IllegalArgumentException(e);
+	private String generateInputFields(String[] fields) {
+		String result = "";
+		for (String field : fields)
+			result += generateTextInput(field, getDescription(field), getPlaceHolder(field), "") + LINE_BREAK;
+		return result;
+	}
+
+	private String generateTextInput(String field, String description, String placeHolder, String value) {
+		numberOfDataInputs++;
+		String title = field;
+		String id = createId(title);
+		String templateName = getInput(field);
+		return resolveData(id, new WebComponent("{" + templateName + " " + title + "}"),
+				getTemplate(templateName + ".html").replaceAll("\\$\\{id\\}", quote(id)).replaceAll("\\$\\{title\\}", title).replaceAll("\\$\\{description\\}", quote(description))
+						.replaceAll("\\$\\{placeholder\\}", quote(placeHolder)).replaceAll("\\$\\{value\\}", quote(value)));
+	}
+
+	private String resolveData(String id, WebComponent component, String content) {
+		if (content.contains("${data}"))
+			content = content.replaceAll("\\$\\{data\\}", Matcher.quoteReplacement(data(id)));
+		Matcher matcher = Pattern.compile(ITEM_TEMPLATE_REGEX).matcher(content);
+		while (matcher.find()) {
+			String[] templates = matcher.group(1).split("@", 2);
+			String rowTemplate = templates.length < 2 ? CONTENT_PLACE : getTemplate(templates[1] + ".html");
+			content = content.replaceAll("\\$\\{data:" + matcher.group(1) + "\\}", Matcher.quoteReplacement(buildComponentData(templates[0], id, component, rowTemplate)));
 		}
 		return content;
 	}
 
-	private String buildComponentData(String id, WebComponent component, String attributeName, String attributePrefix) {
+	private String resolveHeader(String id, WebComponent component, String content) {
+		Matcher matcher = Pattern.compile(HEADER_TEMPLATE_REGEX).matcher(content);
+		while (matcher.find()) {
+			String[] templates = matcher.group(1).split("@", 2);
+			String rowTemplate = templates.length < 2 ? CONTENT_PLACE : getTemplate(templates[1] + ".html");
+			content = content.replaceAll("\\$\\{header:" + matcher.group(1) + "\\}", Matcher.quoteReplacement(buildComponentHeader(templates[0], component, rowTemplate)));
+		}
+		return content;
+	}
+
+	private String buildComponentHeader(String itemTemplate, WebComponent component, String rowTemplate) {
+		String content = "";
+		for (String parameter : component.getParameters())
+			content += generateComponentItem(itemTemplate, parameter);
+		return rowTemplate.replaceAll(CONTENT_REGEX, Matcher.quoteReplacement(content));
+	}
+
+	private String buildComponentData(String itemTemplate, String id, WebComponent component, String rowTemplate) {
+		numberOfDataOutputs += Math.max(1, component.getParameters().length);
 		if (data == null)
 			return "";
 		String content = "";
@@ -304,9 +331,10 @@ public class WebInterface {
 			NodeList rows = dataRows(id, component, xpath);
 			String separator = "";
 			for (int i = 0; i < rows.getLength(); i++) {
-				Node item = rows.item(i).getFirstChild();
-				content += separator
-						+ generateComponentItem(standardId(component.getType() + "-item"), item.getTextContent(), attributeName, attribute(item, attributeName, attributePrefix));
+				String rowContent = "";
+				for (Node dataField : getDataFields(component.getParameters(), xpath, rows.item(i)))
+					rowContent += generateComponentItem(itemTemplate, dataField);
+				content += separator + rowTemplate.replaceAll(CONTENT_REGEX, Matcher.quoteReplacement(rowContent));
 				separator = LINE_BREAK;
 			}
 		} catch (XPathExpressionException e) {
@@ -315,11 +343,39 @@ public class WebInterface {
 		return content;
 	}
 
-	private String generateComponentItem(String templateName, String item, String attributeName, String attributeValue) {
-		String template = getTemplate(templateName + ".html");
-		if (template.contains(ID_PLACE))
-			template = template.replaceAll("\\$\\{id\\}", createId(item));
-		return template.replaceAll("\\$\\{title\\}", Matcher.quoteReplacement(item)).replaceAll("\\$\\{" + attributeName + "\\}", Matcher.quoteReplacement(attributeValue));
+	private String generateComponentItem(String templateName, Node dataField) throws XPathExpressionException {
+		String content = generateComponentItem(templateName, dataField == null ? "" : dataField.getTextContent());
+		Matcher matcher = Pattern.compile(ATTRIBUTE_REGEX).matcher(content);
+		while (matcher.find())
+			content = content.replaceAll("\\$\\{attribute:" + matcher.group(1).trim() + "\\}", Matcher.quoteReplacement(attribute(dataField, matcher.group(1).trim())));
+		return content;
+	}
+
+	private String generateComponentItem(String templateName, String title) {
+		String content = getTemplate(templateName + ".html");
+		if (content.contains(ID_PLACE))
+			content = content.replaceAll("\\$\\{id\\}", createId(title));
+		return content.replaceAll("\\$\\{title\\}", Matcher.quoteReplacement(title));
+	}
+
+	private Node[] getDataFields(String[] fields, XPath xpath, Node dataItem) throws XPathExpressionException {
+		if (fields.length == 0)
+			return new Node[] { dataItem.getFirstChild() };
+		Node[] cells = new Node[fields.length];
+		for (int i = 0; i < cells.length; i++)
+			cells[i] = (Node) xpath.compile(standardId(fields[i])).evaluate(dataItem, XPathConstants.NODE);
+		return cells;
+	}
+
+	private String attribute(Node dataItem, String attributeName) {
+		if ("#cdata-section".equals(dataItem.getNodeName()) || "#text".equals(dataItem.getNodeName()))
+			dataItem = dataItem.getParentNode();
+		if (!dataItem.hasAttributes())
+			return "";
+		Node node = dataItem.getAttributes().getNamedItem(attributeName);
+		if (node == null)
+			return "";
+		return node.getNodeValue();
 	}
 
 	private NodeList dataRows(String id, WebComponent component, XPath xpath) throws XPathExpressionException {
@@ -338,70 +394,8 @@ public class WebInterface {
 		return (NodeList) xpath.compile("//" + standardId(dataContext) + "/" + dataId + "/*").evaluate(data, XPathConstants.NODESET);
 	}
 
-	private String attribute(Node item, String attributeName, String prefix) {
-		if ("#cdata-section".equals(item.getNodeName()) || "#text".equals(item.getNodeName()))
-			item = item.getParentNode();
-		if (!item.hasAttributes())
-			return "";
-		Node node = item.getAttributes().getNamedItem(attributeName);
-		if (node == null)
-			return "";
-		return prefix + node.getNodeValue();
-	}
-
-	private String generateInputFields(String[] fields) {
-		String result = "";
-		for (String field : fields)
-			result += generateTextInput(field, getDescription(field), getPlaceHolder(field), "") + LINE_BREAK;
-		return result;
-	}
-
-	private String generateTableHeader(String[] fields) {
-		String result = "<tr>";
-		for (String field : fields)
-			result += generateTableHeaderCell(field);
-		return result + "</tr>";
-	}
-
-	private String generateTableBodyRow(String[] cells) {
-		String result = "<tr>";
-		for (String cell : cells)
-			result += generateTableBodyCell(cell);
-		return result + "</tr>";
-	}
-
-	private String generateTextInput(String field, String description, String placeHolder, String value) {
-		numberOfDataInputs++;
-		String title = field;
-		String id = createId(title);
-		String templateName = getInput(field);
-		return getTemplate(templateName + ".html")
-				.replaceAll("\\$\\{id\\}", quote(id))
-				.replaceAll("\\$\\{title\\}", title)
-				.replaceAll("\\$\\{description\\}", quote(description))
-				.replaceAll("\\$\\{placeholder\\}", quote(placeHolder))
-				.replaceAll("\\$\\{value\\}", quote(value))
-				.replaceAll("\\$\\{data:" + templateName + "-item\\}",
-						Matcher.quoteReplacement(buildComponentData(id, new WebComponent("{" + templateName + " " + title + "}"), "value", "")));
-	}
-
 	private String quote(String text) {
 		return text.replaceAll("\"", "&quot;");
-	}
-
-	private String generateTableHeaderCell(String title) {
-		numberOfDataOutputs++;
-		String template = getTemplate("table-header-cell.html");
-		if (template.contains(ID_PLACE))
-			template = template.replaceAll("\\$\\{id\\}", createId(title));
-		return template.replaceAll("\\$\\{title\\}", title);
-	}
-
-	private String generateTableBodyCell(String title) {
-		String template = getTemplate("table-body-cell.html");
-		if (template.contains(ID_PLACE))
-			template = template.replaceAll("\\$\\{id\\}", createId(title));
-		return template.replaceAll("\\$\\{title\\}", title);
 	}
 
 	public String getTemplate(String fileName) {
@@ -443,7 +437,7 @@ public class WebInterface {
 
 	private void removeAllEmptyAttributes() {
 		for (WebArtifact artifact : artifacts)
-			artifact.setContent(artifact.getContent().replaceAll("\\s*[a-z]*=\"\"", ""));
+			artifact.setContent(artifact.getContent().replaceAll("\\s*[a-z\\-_]*=\"\"", ""));
 	}
 
 	public String pushContext(String id) {

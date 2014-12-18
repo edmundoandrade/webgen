@@ -17,11 +17,18 @@ public class WebComponent {
 			type = matcher.group(1).trim();
 			title = matcher.group(2).trim();
 			parameters = extractParameters(matcher.group(3).trim());
+		} else {
+			type = "_default";
+			title = "";
+			parameters = extractParameters(removeInitialWikiMarkers(line));
 		}
 	}
 
-	public static boolean matches(String line) {
-		return line.matches(COMPONENT_REGEX);
+	private String removeInitialWikiMarkers(String line) {
+		int start = 0;
+		while (start < line.length() && "*# \t".contains(line.subSequence(start, start + 1)))
+			start++;
+		return line.substring(start);
 	}
 
 	public String getType() {
