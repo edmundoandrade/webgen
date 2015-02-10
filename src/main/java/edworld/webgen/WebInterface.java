@@ -29,6 +29,7 @@ import org.w3c.dom.NodeList;
 import edworld.util.StreamUtil;
 
 public class WebInterface {
+	private static final String PARAMETER_SUFFIX_REGEX = "::.*";
 	protected static final String CONTENT_REGEX = "\\$\\{content\\}";
 	protected static final String ITEM_TEMPLATE_REGEX = "\\$\\{data:([^\\}]+)\\}";
 	protected static final String HEADER_TEMPLATE_REGEX = "\\$\\{header:([^\\}]+)\\}";
@@ -317,8 +318,17 @@ public class WebInterface {
 	private String buildComponentHeader(String itemTemplate, WebComponent component, String rowTemplate) {
 		String content = "";
 		for (String parameter : component.getParameters())
-			content += generateComponentItem(itemTemplate, parameter);
+			content += generateComponentItem(itemTemplate + parameterSuffix(parameter), parameterName(parameter));
 		return rowTemplate.replaceAll(CONTENT_REGEX, Matcher.quoteReplacement(content));
+	}
+
+	private String parameterName(String parameter) {
+		return parameter.replaceAll(PARAMETER_SUFFIX_REGEX, "");
+	}
+
+	private String parameterSuffix(String parameter) {
+		Matcher matcher = Pattern.compile(PARAMETER_SUFFIX_REGEX).matcher(parameter);
+		return matcher.find() ? matcher.group().replaceAll("::", "-") : "";
 	}
 
 	private String buildComponentData(String itemTemplate, String id, WebComponent component, String rowTemplate) {
@@ -363,7 +373,7 @@ public class WebInterface {
 			return new Node[] { dataItem.getFirstChild() };
 		Node[] cells = new Node[fields.length];
 		for (int i = 0; i < cells.length; i++)
-			cells[i] = (Node) xpath.compile(standardId(fields[i])).evaluate(dataItem, XPathConstants.NODE);
+			cells[i] = (Node) xpath.compile(standardId(parameterName(fields[i]))).evaluate(dataItem, XPathConstants.NODE);
 		return cells;
 	}
 
