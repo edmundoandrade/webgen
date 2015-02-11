@@ -57,6 +57,7 @@ public class WebInterface {
 	protected Map<String, String> dataBehavior;
 	protected Map<String, String> dataAlias;
 	protected String currentField;
+	protected String charSet = "UTF-8";
 
 	/**
 	 * WebInterface to be expressed into a set of web artifacts according to the specification and the optional data.
@@ -82,7 +83,7 @@ public class WebInterface {
 			return;
 		}
 		try {
-			this.data = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(new ByteArrayInputStream(data.getBytes()));
+			this.data = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(new ByteArrayInputStream(data.getBytes(charSet)));
 		} catch (Exception e) {
 			throw new IllegalArgumentException(e);
 		}
@@ -253,7 +254,7 @@ public class WebInterface {
 				Matcher.quoteReplacement(component.getTitle()));
 		content = resolveHeader(id, component, content);
 		content = resolveData(id, component, content);
-		if (content.toLowerCase().contains("</form>"))
+		if (content.toLowerCase().contains("</form>") || content.toLowerCase().contains("</fieldset>"))
 			return content.replaceAll(CONTENT_REGEX, Matcher.quoteReplacement(generateInputFields(component.getParameters()) + contentPlace)) + LINE_BREAK;
 		else
 			return content.replaceAll(CONTENT_REGEX, Matcher.quoteReplacement(generateGenericContent(component.getParameters()) + contentPlace)) + LINE_BREAK;
@@ -516,7 +517,7 @@ public class WebInterface {
 	}
 
 	private void save(WebArtifact artifact, File dir) throws IOException {
-		PrintWriter out = new PrintWriter(new File(dir, artifact.getFileName()));
+		PrintWriter out = new PrintWriter(new File(dir, artifact.getFileName()), charSet);
 		try {
 			out.write(artifact.getContent());
 		} finally {
