@@ -83,15 +83,20 @@ public class WebInterfaceTest {
 	public void generateTextInputs() {
 		String content = webInterface.getArtifacts().get(MAIN_PAGE).getContent();
 		assertThat(content, containsString("<label>FInput1<input type=\"text\" id=\"finput1\"></label>"));
-		assertThat(content, containsString("<label>FInput2<select id=\"finput2\"></select></label>"));
-		assertThat(content, containsString("<label title=\"document &quot;classifier&quot; according to the international standards\">Document type<select id=\"document_type\">"
-				+ documentTypeOptions() + "</select></label>"));
+		assertThat(content, containsString("<label class=\"form-group\">FInput2<select id=\"finput2\"></select></label>"));
+		assertThat(
+				content,
+				containsString("<label title=\"document &quot;classifier&quot; according to the international standards\" class=\"form-group\">Document type<select id=\"document_type\">"
+						+ documentTypeOptions() + "</select></label>"));
+		assertThat(content, containsString("<label class=\"form-group col-xs-12 col-sm-6 col-md-3 col-lg-3\">Author<select id=\"author\" class=\"smartSelect\"></select></label>"));
 		assertThat(content, containsString("<label>FEntrada1<input type=\"text\" id=\"fentrada1\"></label>"));
 		assertThat(content, containsString("<label>Filtro entrada dois<input type=\"text\" id=\"filtro_entrada_dois\"></label>"));
 		content = webInterface.getArtifacts().get(NEW_OFFICIAL_DOCUMENT).getContent();
 		assertThat(content, containsString("<label>Name<input type=\"text\" id=\"name\" placeholder=\"type the document's name or title\"></label>"));
-		assertThat(content, containsString("<label title=\"document &quot;classifier&quot; according to the international standards\">Document type<select id=\"document_type\">"
-				+ documentTypeOptions() + "</select></label>"));
+		assertThat(
+				content,
+				containsString("<label title=\"document &quot;classifier&quot; according to the international standards\" class=\"form-group\">Document type<select id=\"document_type\">"
+						+ documentTypeOptions() + "</select></label>"));
 		assertThat(content, containsString("<label>Owner<input type=\"text\" id=\"owner\"></label>"));
 	}
 
@@ -148,7 +153,7 @@ public class WebInterfaceTest {
 		assertThat(content, containsString("<html lang=\"en\">"));
 		assertThat(content, containsString("<title>WebGen report</title>"));
 		assertThat(content, containsString("<thead><tr><th>Title</th><th>Data inputs</th><th>Data outputs</th></tr></thead>"));
-		assertThat(content, containsString("<tr><td><a href=\"main_page.html\">Main page</a></td><td>9</td><td>9</td></tr>"));
+		assertThat(content, containsString("<tr><td><a href=\"main_page.html\">Main page</a></td><td>10</td><td>10</td></tr>"));
 		assertThat(content, containsString("<tr><td><a href=\"new_official_document.html\">New official document</a></td><td>4</td><td>4</td></tr>"));
 	}
 

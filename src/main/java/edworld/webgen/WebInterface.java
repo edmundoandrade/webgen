@@ -288,10 +288,21 @@ public class WebInterface {
 		numberOfDataInputs++;
 		String title = field;
 		String id = createId(title);
-		String templateName = getInput(field);
-		return resolveData(id, new WebComponent("{" + templateName + " " + title + "}"),
+		String[] inputParts = getInput(field).split("[\\(\\)]");
+		String templateName = inputParts[0];
+		String result = resolveData(id, new WebComponent("{" + templateName + " " + title + "}"),
 				getTemplate(templateName + ".html").replaceAll("\\$\\{id\\}", quote(id)).replaceAll("\\$\\{title\\}", title).replaceAll("\\$\\{description\\}", quote(description))
 						.replaceAll("\\$\\{placeholder\\}", quote(placeHolder)).replaceAll("\\$\\{value\\}", quote(value)));
+		for (int i = 1; i < inputParts.length; i++)
+			if (inputParts[i].contains("=")) {
+				String[] definitionParts = inputParts[i].split("=");
+				result = result.replaceAll("\\$\\{" + definitionParts[0].trim() + "\\}", Matcher.quoteReplacement(definitionParts[1].trim()));
+			}
+		return removeVariablesNotReplaced(result);
+	}
+
+	private String removeVariablesNotReplaced(String html) {
+		return html.replaceAll("\\s?\\$\\{[^\\}]*\\}\\s?", "");
 	}
 
 	private String resolveData(String id, WebComponent component, String content) {
