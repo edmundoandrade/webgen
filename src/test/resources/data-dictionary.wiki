@@ -13,4 +13,4 @@ Any information put before first mark below has one aim: human reading.
 * Name
 ** placeholder: type the document's name or title
 * Document type: document "classifier" according to the international standards 
-** input: select
+** input: Select

@@ -177,7 +177,7 @@ public class WebInterface {
 		String data = "<" + standardId(getWebGenReportTitle()) + ">" + LINE_BREAK;
 		data += buildArtifactTableData() + LINE_BREAK;
 		data += "</" + standardId(getWebGenReportTitle()) + ">";
-		WebInterface webReports = new WebInterface(getTemplate("webgen-reporting-specification.wiki"), null, defaultLanguage, templatesDir, data);
+		WebInterface webReports = new WebInterface(getTemplate("webgen-reporting-specification", ".wiki"), null, defaultLanguage, templatesDir, data);
 		webReports.generateArtifacts();
 		reports = webReports.getArtifacts();
 	}
@@ -225,7 +225,7 @@ public class WebInterface {
 	}
 
 	private String generateWebPage(String title, String lang) {
-		return getTemplate("web-page.html").replaceAll("\\$\\{lang\\}", lang).replaceAll("\\$\\{title\\}", title);
+		return getTemplate("web-page").replaceAll("\\$\\{lang\\}", lang).replaceAll("\\$\\{title\\}", title);
 	}
 
 	private void updateLevel(String line) {
@@ -250,8 +250,7 @@ public class WebInterface {
 		WebComponent component = new WebComponent(line);
 		String id = createId(component);
 		String contentPlace = pushContext(id);
-		String content = getTemplate(standardId(component.getType()) + ".html").replaceAll("\\$\\{id\\}", id).replaceAll("\\$\\{title\\}",
-				Matcher.quoteReplacement(component.getTitle()));
+		String content = getTemplate(component.getType()).replaceAll("\\$\\{id\\}", id).replaceAll("\\$\\{title\\}", Matcher.quoteReplacement(component.getTitle()));
 		content = resolveHeader(id, component, content);
 		content = resolveData(id, component, content);
 		if (content.toLowerCase().contains("</form>") || content.toLowerCase().contains("</fieldset>"))
@@ -291,7 +290,7 @@ public class WebInterface {
 		String[] inputParts = getInput(field).split("[\\(\\)]");
 		String templateName = inputParts[0];
 		String result = resolveData(id, new WebComponent("{" + templateName + " " + title + "}"),
-				getTemplate(templateName + ".html").replaceAll("\\$\\{id\\}", quote(id)).replaceAll("\\$\\{title\\}", title).replaceAll("\\$\\{description\\}", quote(description))
+				getTemplate(templateName).replaceAll("\\$\\{id\\}", quote(id)).replaceAll("\\$\\{title\\}", title).replaceAll("\\$\\{description\\}", quote(description))
 						.replaceAll("\\$\\{placeholder\\}", quote(placeHolder)).replaceAll("\\$\\{value\\}", quote(value)));
 		for (int i = 1; i < inputParts.length; i++)
 			if (inputParts[i].contains("=")) {
@@ -311,7 +310,7 @@ public class WebInterface {
 		Matcher matcher = Pattern.compile(ITEM_TEMPLATE_REGEX).matcher(content);
 		while (matcher.find()) {
 			String[] templates = matcher.group(1).split("@", 2);
-			String rowTemplate = templates.length < 2 ? CONTENT_PLACE : getTemplate(templates[1] + ".html");
+			String rowTemplate = templates.length < 2 ? CONTENT_PLACE : getTemplate(templates[1]);
 			content = content.replaceAll("\\$\\{data:" + matcher.group(1) + "\\}", Matcher.quoteReplacement(buildComponentData(templates[0], id, component, rowTemplate)));
 		}
 		return content;
@@ -321,7 +320,7 @@ public class WebInterface {
 		Matcher matcher = Pattern.compile(HEADER_TEMPLATE_REGEX).matcher(content);
 		while (matcher.find()) {
 			String[] templates = matcher.group(1).split("@", 2);
-			String rowTemplate = templates.length < 2 ? CONTENT_PLACE : getTemplate(templates[1] + ".html");
+			String rowTemplate = templates.length < 2 ? CONTENT_PLACE : getTemplate(templates[1]);
 			content = content.replaceAll("\\$\\{header:" + matcher.group(1) + "\\}", Matcher.quoteReplacement(buildComponentHeader(templates[0], component, rowTemplate)));
 		}
 		return content;
@@ -374,7 +373,7 @@ public class WebInterface {
 	}
 
 	private String generateComponentItem(String templateName, String title) {
-		String content = getTemplate(templateName + ".html");
+		String content = getTemplate(templateName);
 		if (content.contains(ID_PLACE))
 			content = content.replaceAll("\\$\\{id\\}", createId(title));
 		return content.replaceAll("\\$\\{title\\}", Matcher.quoteReplacement(title));
@@ -420,7 +419,12 @@ public class WebInterface {
 		return text.replaceAll("\"", "&quot;");
 	}
 
-	public String getTemplate(String fileName) {
+	public String getTemplate(String templateName) {
+		return getTemplate(templateName, ".html");
+	}
+
+	public String getTemplate(String templateName, String templateExtension) {
+		String fileName = standardId(templateName) + templateExtension;
 		File templateFile = new File(templatesDir, fileName);
 		if (templateFile.exists())
 			try {
@@ -439,7 +443,7 @@ public class WebInterface {
 		String separator = "";
 		for (WebArtifact artifact : artifacts) {
 			autoMenu += separator
-					+ getTemplate("menu-item.html").replaceAll("\\$\\{url\\}", Matcher.quoteReplacement(artifact.getFileName())).replaceAll("\\$\\{title\\}",
+					+ getTemplate("menu-item").replaceAll("\\$\\{url\\}", Matcher.quoteReplacement(artifact.getFileName())).replaceAll("\\$\\{title\\}",
 							Matcher.quoteReplacement(artifact.getTitle()));
 			separator = LINE_BREAK;
 		}
