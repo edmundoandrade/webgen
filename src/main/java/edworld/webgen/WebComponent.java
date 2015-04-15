@@ -4,17 +4,30 @@ package edworld.webgen;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.xml.parsers.DocumentBuilderFactory;
+
+import org.w3c.dom.Document;
+
 public class WebComponent {
 	protected static final String COMPONENT_REGEX = ".*\\{([^\\}\\s]+)([^\\}]*)\\}(.*)";
 	protected static final String PARAMETER_DELIMITER_REGEX = "\\|";
 	protected String type;
+	protected Document xmlData;
 	protected String title;
 	protected String[] parameters;
 
 	public WebComponent(String line) {
 		Matcher matcher = Pattern.compile(COMPONENT_REGEX).matcher(line);
 		if (matcher.find()) {
-			type = matcher.group(1).trim();
+			String[] parts = matcher.group(1).trim().split("[(=)]", 4);
+			type = parts[0];
+			if (parts.length > 2 && parts[1].equals("XML"))
+				try {
+					xmlData = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(parts[2]);
+				} catch (Exception e) {
+					throw new IllegalArgumentException(e);
+				}
+
 			title = matcher.group(2).trim();
 			parameters = extractParameters(matcher.group(3).trim());
 		} else {
@@ -33,6 +46,10 @@ public class WebComponent {
 
 	public String getType() {
 		return type;
+	}
+
+	public Document getXmlData() {
+		return xmlData;
 	}
 
 	public String getTitle() {

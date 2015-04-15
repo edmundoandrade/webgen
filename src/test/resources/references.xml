@@ -1,0 +1,17 @@
+<references>
+	<reference>
+		<type><![CDATA[<a href="#Book">Book</a>]]></type>
+		<code>101</code>
+		<year>2003</year>
+	</reference>
+	<reference>
+		<type><![CDATA[<a href="#Book">Book</a>]]></type>
+		<code>102</code>
+		<year>1990</year>
+	</reference>
+	<reference>
+		<type><![CDATA[<a href="#Journal">Journal</a>]]></type>
+		<code>507</code>
+		<year>2015</year>
+	</reference>
+</references>

@@ -77,6 +77,9 @@ public class WebInterfaceTest {
 		assertThat(content, containsString("<tr><td>HOHOHOHA</td><td class=\"row\" data-title=\"t2\">HOHOHOHB</td><td>HOHOHOHC</td><td><a href=\"#secao_x\">Click</a></td></tr>"));
 		assertThat(content, containsString("<thead><tr><th>TCab1</th><th>TCab2</th><th>TCab3</th></tr></thead>"));
 		assertThat(content, containsString("<tr><td><a href=\"#\">Item 1</a></td><td>NONONONY</td><td>NONONONZ</td></tr>"));
+		content = webInterface.getArtifacts().get(NEW_OFFICIAL_DOCUMENT).getContent();
+		assertThat(content, containsString("<tr><td><a href=\"#Book\">Book</a></td><td>101</td><td>2003</td></tr>"));
+		assertThat(content, containsString("<tr><td><a href=\"#Journal\">Journal</a></td><td>507</td><td>2015</td></tr>"));
 	}
 
 	@Test
@@ -154,7 +157,7 @@ public class WebInterfaceTest {
 		assertThat(content, containsString("<title>WebGen report</title>"));
 		assertThat(content, containsString("<thead><tr><th>Title</th><th>Data inputs</th><th>Data outputs</th></tr></thead>"));
 		assertThat(content, containsString("<tr><td><a href=\"main_page.html\">Main page</a></td><td>10</td><td>10</td></tr>"));
-		assertThat(content, containsString("<tr><td><a href=\"new_official_document.html\">New official document</a></td><td>4</td><td>4</td></tr>"));
+		assertThat(content, containsString("<tr><td><a href=\"new_official_document.html\">New official document</a></td><td>4</td><td>7</td></tr>"));
 	}
 
 	@Test
@@ -179,6 +182,6 @@ public class WebInterfaceTest {
 	}
 
 	private String getSpecification(String resourceName) {
-		return new TextUtil().extractText(getClass().getResourceAsStream(resourceName));
+		return new TextUtil().extractText(getClass().getResourceAsStream(resourceName)).replace("(XML=/references.xml)", "(XML=" + getClass().getResource("/references.xml") + ")");
 	}
 }

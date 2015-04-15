@@ -23,3 +23,4 @@ Any information put before first mark below has one aim: human reading.
 ** {Circle Happy customers}
 ** {Circle Other customers}
 * {NumericalLabel 0: is the goal for the 'other customers' indicator}
+* {Table(XML=/references.xml) References} Type | Code | Year

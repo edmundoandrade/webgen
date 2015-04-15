@@ -155,7 +155,7 @@ public class WebArtifact {
 
 	private String resolveData(String id, WebComponent component, String content) {
 		if (content.contains("${data}"))
-			content = content.replaceAll("\\$\\{data\\}", Matcher.quoteReplacement(data(id)));
+			content = content.replaceAll("\\$\\{data\\}", Matcher.quoteReplacement(data(id, component)));
 		Matcher matcher = Pattern.compile(ITEM_TEMPLATE_REGEX).matcher(content);
 		while (matcher.find()) {
 			String[] templates = matcher.group(1).split("@", 2);
@@ -165,11 +165,14 @@ public class WebArtifact {
 		return content;
 	}
 
-	private String data(String dataId) {
+	private String data(String dataId, WebComponent component) {
 		dataOutputs++;
 		XPath xpath = XPathFactory.newInstance().newXPath();
 		try {
-			return xpath.compile("//" + standardId(getTitle()) + "/" + dataId + "/text()").evaluate(data);
+			if (component.getXmlData() == null)
+				return xpath.compile("//" + standardId(getTitle()) + "/" + dataId + "/text()").evaluate(data);
+			else
+				return xpath.compile("//" + dataId + "/text()").evaluate(component.getXmlData());
 		} catch (XPathExpressionException e) {
 			throw new IllegalArgumentException(e);
 		}
@@ -286,18 +289,21 @@ public class WebArtifact {
 
 	private NodeList dataRows(String id, WebComponent component, XPath xpath) throws XPathExpressionException {
 		boolean checkTitle = !component.getTitle().isEmpty() && !id.equals(standardId(component.getTitle()));
-		NodeList rows = dataRows(getTitle(), id, xpath);
+		NodeList rows = dataRows(getTitle(), id, component, xpath);
 		if (rows.getLength() == 0 && checkTitle)
-			rows = dataRows(getTitle(), component.getTitle(), xpath);
+			rows = dataRows(getTitle(), component.getTitle(), component, xpath);
 		if (rows.getLength() == 0)
-			rows = dataRows(DEFAULT_DATA_CONTEXT, id, xpath);
+			rows = dataRows(DEFAULT_DATA_CONTEXT, id, component, xpath);
 		if (rows.getLength() == 0 && checkTitle)
-			rows = dataRows(DEFAULT_DATA_CONTEXT, component.getTitle(), xpath);
+			rows = dataRows(DEFAULT_DATA_CONTEXT, component.getTitle(), component, xpath);
 		return rows;
 	}
 
-	private NodeList dataRows(String dataContext, String dataId, XPath xpath) throws XPathExpressionException {
-		return (NodeList) xpath.compile("//" + standardId(dataContext) + "/" + dataId + "/*").evaluate(data, XPathConstants.NODESET);
+	private NodeList dataRows(String dataContext, String dataId, WebComponent component, XPath xpath) throws XPathExpressionException {
+		if (component.getXmlData() == null)
+			return (NodeList) xpath.compile("//" + standardId(dataContext) + "/" + dataId + "/*").evaluate(data, XPathConstants.NODESET);
+		else
+			return (NodeList) xpath.compile("*/*").evaluate(component.getXmlData(), XPathConstants.NODESET);
 	}
 
 	private String attribute(Node dataItem, String attributeName) {
