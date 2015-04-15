@@ -9,7 +9,6 @@ import org.junit.Test;
 public class WebArtifactTest {
 	@Test(expected = IllegalArgumentException.class)
 	public void getInvalidTemplate() throws IOException {
-		WebArtifact.getTemplate("invalid-template", new File(
-				"target/web-templates"));
+		WebArtifact.getTemplate("invalid-template", new File("target/web-templates"));
 	}
 }

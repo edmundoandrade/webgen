@@ -17,12 +17,11 @@ import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.w3c.dom.Document;
 
-import edworld.util.StreamUtil;
+import edworld.util.TextUtil;
 
 public class WebInterface {
 	protected static final String PROP_DESCRIPTION = "description";
-	protected static final String LINE_BREAK = System
-			.getProperty("line.separator");
+	protected static final String LINE_BREAK = System.getProperty("line.separator");
 
 	protected String specification;
 	protected String defaultLanguage;
@@ -38,15 +37,12 @@ public class WebInterface {
 	protected String charSet = "UTF-8";
 
 	/**
-	 * WebInterface to be expressed into a set of web artifacts according to the
-	 * specification and the optional data.
+	 * WebInterface to be expressed into a set of web artifacts according to the specification and the optional data.
 	 * 
 	 * @param specification
-	 *            the specification, expressed as wiki text, for generating the
-	 *            web artifacts
+	 *            the specification, expressed as wiki text, for generating the web artifacts
 	 * @param dataDictionary
-	 *            optional data dictionary for configuring the behavior of data
-	 *            entry and/or presenting
+	 *            optional data dictionary for configuring the behavior of data entry and/or presenting
 	 * @param defaultLanguage
 	 *            the main language in which the web artifacts will be generated
 	 * @param templatesDir
@@ -54,8 +50,7 @@ public class WebInterface {
 	 * @param data
 	 *            optional (sample) data expressed as XML
 	 */
-	public WebInterface(String specification, String dataDictionary,
-			String defaultLanguage, File templatesDir, String data) {
+	public WebInterface(String specification, String dataDictionary, String defaultLanguage, File templatesDir, String data) {
 		this.specification = specification;
 		loadDataBehavior(dataDictionary);
 		this.defaultLanguage = defaultLanguage;
@@ -65,9 +60,7 @@ public class WebInterface {
 			return;
 		}
 		try {
-			this.data = DocumentBuilderFactory.newInstance()
-					.newDocumentBuilder()
-					.parse(new ByteArrayInputStream(data.getBytes(charSet)));
+			this.data = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(new ByteArrayInputStream(data.getBytes(charSet)));
 		} catch (Exception e) {
 			throw new IllegalArgumentException(e);
 		}
@@ -86,8 +79,7 @@ public class WebInterface {
 
 	private boolean newField(String line) {
 		if (line.matches("\\s*\\*[^\\*].*")) {
-			String fieldDefinition = line.substring(line.indexOf('*') + 1)
-					.trim();
+			String fieldDefinition = line.substring(line.indexOf('*') + 1).trim();
 			String[] metadata;
 			if (fieldDefinition.contains("=")) {
 				metadata = fieldDefinition.split("=");
@@ -96,8 +88,7 @@ public class WebInterface {
 			} else if (fieldDefinition.contains(":")) {
 				metadata = fieldDefinition.split(":", 2);
 				currentField = metadata[0].toLowerCase().trim();
-				addDataBehavior(currentField, PROP_DESCRIPTION,
-						metadata[1].trim());
+				addDataBehavior(currentField, PROP_DESCRIPTION, metadata[1].trim());
 			} else
 				currentField = fieldDefinition.toLowerCase().trim();
 			return true;
@@ -106,11 +97,9 @@ public class WebInterface {
 	}
 
 	private void updateField(String field, String line) {
-		Matcher matcher = Pattern.compile("\\s*\\*\\*[^\\*](.*):(.*)").matcher(
-				line);
+		Matcher matcher = Pattern.compile("\\s*\\*\\*[^\\*](.*):(.*)").matcher(line);
 		if (matcher.find())
-			addDataBehavior(field, matcher.group(1).trim(), matcher.group(2)
-					.trim());
+			addDataBehavior(field, matcher.group(1).trim(), matcher.group(2).trim());
 	}
 
 	private void addDataAlias(String field, String sourceField) {
@@ -123,33 +112,25 @@ public class WebInterface {
 	}
 
 	/**
-	 * WebInterface to be expressed into a set of web artifacts according to the
-	 * specification and the optional data.
+	 * WebInterface to be expressed into a set of web artifacts according to the specification and the optional data.
 	 * 
 	 * @param specificationStream
-	 *            stream for loading the specification expressed as wiki text,
-	 *            will be closed after this operation
+	 *            stream for loading the specification expressed as wiki text, will be closed after this operation
 	 * @param dataDicionaryStream
-	 *            optional stream for loading the data dictionary expressed as
-	 *            wiki text, will be closed after this operation
+	 *            optional stream for loading the data dictionary expressed as wiki text, will be closed after this operation
 	 * @param defaultLanguage
 	 *            the main language in which the web artifacts will be generated
 	 * @param templatesDir
 	 *            the directory for overriding the built-in templates
 	 * @param dataStream
-	 *            the stream for loading (sample) data expressed as XML, will be
-	 *            closed after this operation
+	 *            the stream for loading (sample) data expressed as XML, will be closed after this operation
 	 */
-	public WebInterface(InputStream specificationStream,
-			InputStream dataDicionaryStream, String defaultLanguage,
-			File templatesDir, InputStream dataStream) {
-		this(extractText(specificationStream),
-				extractText(dataDicionaryStream), defaultLanguage,
-				templatesDir, extractText(dataStream));
+	public WebInterface(InputStream specificationStream, InputStream dataDicionaryStream, String defaultLanguage, File templatesDir, InputStream dataStream) {
+		this(extractText(specificationStream), extractText(dataDicionaryStream), defaultLanguage, templatesDir, extractText(dataStream));
 	}
 
 	private static String extractText(InputStream stream) {
-		return new StreamUtil().extractText(stream);
+		return new TextUtil().extractText(stream);
 	}
 
 	public void generateArtifacts() {
@@ -168,13 +149,10 @@ public class WebInterface {
 	}
 
 	private void generateReports() {
-		String data = "<" + WebArtifact.standardId(getWebGenReportTitle())
-				+ ">" + LINE_BREAK;
+		String data = "<" + WebArtifact.standardId(getWebGenReportTitle()) + ">" + LINE_BREAK;
 		data += buildArtifactTableData() + LINE_BREAK;
 		data += "</" + WebArtifact.standardId(getWebGenReportTitle()) + ">";
-		WebInterface webReports = new WebInterface(WebArtifact.getTemplate(
-				"webgen-reporting-specification", ".wiki", templatesDir), null,
-				defaultLanguage, templatesDir, data);
+		WebInterface webReports = new WebInterface(WebArtifact.getTemplate("webgen-reporting-specification", ".wiki", templatesDir), null, defaultLanguage, templatesDir, data);
 		webReports.generateArtifacts();
 		reports = webReports.getArtifacts();
 	}
@@ -183,13 +161,9 @@ public class WebInterface {
 		String xml = "<_table>" + LINE_BREAK;
 		for (WebArtifact artifact : artifacts) {
 			xml += "<artifact>" + LINE_BREAK;
-			xml += "<title>"
-					+ encodeCharData(addLink(artifact.getTitle(),
-							artifact.getFileName())) + "</title>" + LINE_BREAK;
-			xml += "<data_inputs>" + artifact.getDataInputs()
-					+ "</data_inputs>" + LINE_BREAK;
-			xml += "<data_outputs>" + artifact.getDataOutputs()
-					+ "</data_outputs>" + LINE_BREAK;
+			xml += "<title>" + encodeCharData(addLink(artifact.getTitle(), artifact.getFileName())) + "</title>" + LINE_BREAK;
+			xml += "<data_inputs>" + artifact.getDataInputs() + "</data_inputs>" + LINE_BREAK;
+			xml += "<data_outputs>" + artifact.getDataOutputs() + "</data_outputs>" + LINE_BREAK;
 			xml += "</artifact>" + LINE_BREAK;
 		}
 		xml += "</_table>";
@@ -203,9 +177,7 @@ public class WebInterface {
 	private boolean newArtifact(String line) {
 		if (line.matches("\\s*==[^=].*")) {
 			String title = line.replaceAll("==", "").trim();
-			currentArtifact = new WebArtifact(title, generateWebPage(title,
-					defaultLanguage), WebArtifact.standardId(title) + ".html",
-					dataBehavior, dataAlias, templatesDir, data);
+			currentArtifact = new WebArtifact(title, generateWebPage(title, defaultLanguage), WebArtifact.standardId(title) + ".html", dataBehavior, dataAlias, templatesDir, data);
 			artifacts.add(currentArtifact);
 			return true;
 		}
@@ -213,9 +185,7 @@ public class WebInterface {
 	}
 
 	private String generateWebPage(String title, String lang) {
-		return WebArtifact.getTemplate("web-page", templatesDir)
-				.replaceAll("\\$\\{lang\\}", lang)
-				.replaceAll("\\$\\{title\\}", title);
+		return WebArtifact.getTemplate("web-page", templatesDir).replaceAll("\\$\\{lang\\}", lang).replaceAll("\\$\\{title\\}", title);
 	}
 
 	private void autoMenu() {
@@ -223,22 +193,12 @@ public class WebInterface {
 		String separator = "";
 		for (WebArtifact artifact : artifacts) {
 			autoMenu += separator
-					+ WebArtifact
-							.getTemplate("menu-item", templatesDir)
-							.replaceAll(
-									"\\$\\{url\\}",
-									Matcher.quoteReplacement(artifact
-											.getFileName()))
-							.replaceAll(
-									"\\$\\{title\\}",
-									Matcher.quoteReplacement(artifact
-											.getTitle()));
+					+ WebArtifact.getTemplate("menu-item", templatesDir).replaceAll("\\$\\{url\\}", Matcher.quoteReplacement(artifact.getFileName()))
+							.replaceAll("\\$\\{title\\}", Matcher.quoteReplacement(artifact.getTitle()));
 			separator = LINE_BREAK;
 		}
 		for (WebArtifact artifact : artifacts)
-			artifact.setContent(artifact.getContent().replaceAll(
-					"\\$\\{automenu:menu-item\\}",
-					Matcher.quoteReplacement(autoMenu)));
+			artifact.setContent(artifact.getContent().replaceAll("\\$\\{automenu:menu-item\\}", Matcher.quoteReplacement(autoMenu)));
 	}
 
 	private String resolveField(String field) {
@@ -260,8 +220,7 @@ public class WebInterface {
 	}
 
 	private void save(WebArtifact artifact, File dir) throws IOException {
-		PrintWriter out = new PrintWriter(
-				new File(dir, artifact.getFileName()), charSet);
+		PrintWriter out = new PrintWriter(new File(dir, artifact.getFileName()), charSet);
 		try {
 			out.write(artifact.getContent());
 		} finally {
