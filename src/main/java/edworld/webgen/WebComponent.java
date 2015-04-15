@@ -19,11 +19,11 @@ public class WebComponent {
 	public WebComponent(String line) {
 		Matcher matcher = Pattern.compile(COMPONENT_REGEX).matcher(line);
 		if (matcher.find()) {
-			String[] parts = matcher.group(1).trim().split("[(=)]", 4);
+			String[] parts = matcher.group(1).trim().split("[()]", 3);
 			type = parts[0];
-			if (parts.length > 2 && parts[1].equals("XML"))
+			if (parts.length > 1 && parts[1].startsWith("XML="))
 				try {
-					xmlData = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(parts[2]);
+					xmlData = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(parts[1].substring(4));
 				} catch (Exception e) {
 					throw new IllegalArgumentException(e);
 				}

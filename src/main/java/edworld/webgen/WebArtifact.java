@@ -268,7 +268,7 @@ public class WebArtifact {
 
 	private Node[] getDataFields(String[] fields, XPath xpath, Node dataItem) throws XPathExpressionException {
 		if (fields.length == 0)
-			return new Node[] { dataItem.getFirstChild() };
+			return new Node[] { dataItem };
 		Node[] cells = new Node[fields.length];
 		for (int i = 0; i < cells.length; i++)
 			cells[i] = (Node) xpath.compile(standardId(parameterName(fields[i]))).evaluate(dataItem, XPathConstants.NODE);
@@ -277,13 +277,27 @@ public class WebArtifact {
 
 	private String generateComponentItem(String templateName, Node dataField) throws XPathExpressionException {
 		String content = generateComponentItem(templateName, dataField == null ? "" : dataField.getTextContent());
-		Matcher matcher = Pattern.compile(ATTRIBUTE_REGEX).matcher(content);
-		while (matcher.find())
-			content = content.replaceAll("\\$\\{attribute:" + matcher.group(1).trim() + "\\}", Matcher.quoteReplacement(attribute(dataField, matcher.group(1).trim())));
-		matcher = Pattern.compile(ELEMENT_REGEX).matcher(content);
-		while (matcher.find())
-			content = content.replaceAll("\\$\\{element:" + matcher.group(1).trim() + "\\}", Matcher.quoteReplacement(element(dataField, matcher.group(1).trim())));
+		for (String attributeName : attributeRefs(content))
+			content = content.replaceAll("\\$\\{attribute:" + attributeName + "\\}", Matcher.quoteReplacement(attribute(dataField, attributeName)));
+		for (String elementName : elementRefs(content))
+			content = content.replaceAll("\\$\\{element:" + elementName + "\\}", Matcher.quoteReplacement(element(dataField, elementName)));
 		return content;
+	}
+
+	private List<String> attributeRefs(String templateContent) {
+		List<String> lista = new ArrayList<String>();
+		Matcher matcher = Pattern.compile(ATTRIBUTE_REGEX).matcher(templateContent);
+		while (matcher.find())
+			lista.add(matcher.group(1).trim());
+		return lista;
+	}
+
+	private List<String> elementRefs(String templateContent) {
+		List<String> lista = new ArrayList<String>();
+		Matcher matcher = Pattern.compile(ELEMENT_REGEX).matcher(templateContent);
+		while (matcher.find())
+			lista.add(matcher.group(1).trim());
+		return lista;
 	}
 
 	private String generateComponentItem(String templateName, String title) {
@@ -313,26 +327,29 @@ public class WebArtifact {
 	}
 
 	private String attribute(Node dataItem, String attributeName) {
-		if ("#cdata-section".equals(dataItem.getNodeName()) || "#text".equals(dataItem.getNodeName()))
-			dataItem = dataItem.getParentNode();
+		Node node = attributeNode(dataItem, attributeName);
+		return node == null ? "" : node.getNodeValue();
+	}
+
+	private Node attributeNode(Node dataItem, String attributeName) {
 		if (!dataItem.hasAttributes())
-			return "";
-		Node node = dataItem.getAttributes().getNamedItem(attributeName);
-		if (node == null)
-			return "";
-		return node.getNodeValue();
+			return null;
+		return dataItem.getAttributes().getNamedItem(attributeName);
 	}
 
 	private String element(Node dataItem, String elementName) {
-		if ("#cdata-section".equals(dataItem.getNodeName()) || "#text".equals(dataItem.getNodeName()))
-			dataItem = dataItem.getParentNode();
+		Node node = elementNode(dataItem, elementName);
+		return node == null ? "" : node.getTextContent();
+	}
+
+	private Node elementNode(Node dataItem, String elementName) {
 		NodeList list = dataItem.getChildNodes();
 		for (int i = 0; i < list.getLength(); i++) {
 			Node node = list.item(i);
 			if (node.getNodeType() == Node.ELEMENT_NODE && node.getNodeName().equals(elementName))
-				return node.getTextContent();
+				return node;
 		}
-		return "";
+		return null;
 	}
 
 	private String getDescription(String field) {
