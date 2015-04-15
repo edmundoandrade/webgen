@@ -3,7 +3,7 @@ Any information put before first mark below has one aim: human reading.
 == Main page ==
 * {Menu}
 * {Section Section A}
-** {Filter F} FInput1 | FInput2 | Document type | Author
+** {Filter F} FInput1 | FInput2 | Document type | Author | Country
 *** {Action Filter}
 ** {Table} THeader1 | THeader2 | THeader3 | THeader4
 ** {Action one}

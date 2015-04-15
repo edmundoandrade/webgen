@@ -1,0 +1,10 @@
+<countries>
+	<country>
+		<code>BR</code>
+		<name>Brasil</name>
+	</country>
+	<country>
+	    <code>PT</code>
+	    <name>Portugal</name>
+	</country>
+</countries>

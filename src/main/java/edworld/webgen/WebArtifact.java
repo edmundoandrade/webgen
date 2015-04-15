@@ -30,6 +30,7 @@ public class WebArtifact {
 	protected static final String ITEM_TEMPLATE_REGEX = "\\$\\{data:([^\\}]+)\\}";
 	protected static final String HEADER_TEMPLATE_REGEX = "\\$\\{header:([^\\}]+)\\}";
 	protected static final String ATTRIBUTE_REGEX = "\\$\\{attribute:([^\\}]+)\\}";
+	protected static final String ELEMENT_REGEX = "\\$\\{element:([^\\}]+)\\}";
 	protected static final String ID_PLACE = "${id}";
 	protected static final String DEFAULT_DATA_CONTEXT = "default";
 	protected static final String PROP_DESCRIPTION = "description";
@@ -199,13 +200,15 @@ public class WebArtifact {
 		dataInputs++;
 		String title = field;
 		String id = createId(title);
-		String[] inputParts = getInput(field).split("[\\(\\)]");
+		String[] inputParts = getInput(field).split("[()]");
 		String templateName = inputParts[0];
-		String result = resolveData(
-				id,
-				new WebComponent("{" + templateName + " " + title + "}"),
-				getTemplate(templateName, templatesDir).replaceAll("\\$\\{id\\}", quote(id)).replaceAll("\\$\\{title\\}", title)
-						.replaceAll("\\$\\{description\\}", quote(description)).replaceAll("\\$\\{placeholder\\}", quote(placeHolder)).replaceAll("\\$\\{value\\}", quote(value)));
+		if (inputParts.length > 1 && inputParts[1].startsWith("XML=")) {
+			templateName += "(" + inputParts[1] + ")";
+			inputParts[1] = "";
+		}
+		WebComponent component = new WebComponent("{" + templateName + " " + title + "}");
+		String result = resolveData(id, component, getTemplate(component.getType(), templatesDir).replaceAll("\\$\\{id\\}", quote(id)).replaceAll("\\$\\{title\\}", title)
+				.replaceAll("\\$\\{description\\}", quote(description)).replaceAll("\\$\\{placeholder\\}", quote(placeHolder)).replaceAll("\\$\\{value\\}", quote(value)));
 		for (int i = 1; i < inputParts.length; i++)
 			if (inputParts[i].contains("=")) {
 				String[] definitionParts = inputParts[i].split("=");
@@ -277,6 +280,9 @@ public class WebArtifact {
 		Matcher matcher = Pattern.compile(ATTRIBUTE_REGEX).matcher(content);
 		while (matcher.find())
 			content = content.replaceAll("\\$\\{attribute:" + matcher.group(1).trim() + "\\}", Matcher.quoteReplacement(attribute(dataField, matcher.group(1).trim())));
+		matcher = Pattern.compile(ELEMENT_REGEX).matcher(content);
+		while (matcher.find())
+			content = content.replaceAll("\\$\\{element:" + matcher.group(1).trim() + "\\}", Matcher.quoteReplacement(element(dataField, matcher.group(1).trim())));
 		return content;
 	}
 
@@ -315,6 +321,18 @@ public class WebArtifact {
 		if (node == null)
 			return "";
 		return node.getNodeValue();
+	}
+
+	private String element(Node dataItem, String elementName) {
+		if ("#cdata-section".equals(dataItem.getNodeName()) || "#text".equals(dataItem.getNodeName()))
+			dataItem = dataItem.getParentNode();
+		NodeList list = dataItem.getChildNodes();
+		for (int i = 0; i < list.getLength(); i++) {
+			Node node = list.item(i);
+			if (node.getNodeType() == Node.ELEMENT_NODE && node.getNodeName().equals(elementName))
+				return node.getTextContent();
+		}
+		return "";
 	}
 
 	private String getDescription(String field) {

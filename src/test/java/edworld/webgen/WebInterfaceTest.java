@@ -92,6 +92,9 @@ public class WebInterfaceTest {
 				containsString("<label title=\"document &quot;classifier&quot; according to the international standards\" class=\"form-group\">Document type<select id=\"document_type\">"
 						+ documentTypeOptions() + "</select></label>"));
 		assertThat(content, containsString("<label class=\"form-group col-xs-12 col-sm-6 col-md-3 col-lg-3\">Author<select id=\"author\" class=\"smartSelect\"></select></label>"));
+		assertThat(content, containsString("<label class=\"form-group\">Country<select id=\"country\">"));
+		assertThat(content, containsString("<option value=\"BR\">Brasil</option>"));
+		assertThat(content, containsString("<option value=\"PT\">Portugal</option>"));
 		assertThat(content, containsString("<label>FEntrada1<input type=\"text\" id=\"fentrada1\"></label>"));
 		assertThat(content, containsString("<label>Filtro entrada dois<input type=\"text\" id=\"filtro_entrada_dois\"></label>"));
 		content = webInterface.getArtifacts().get(NEW_OFFICIAL_DOCUMENT).getContent();
@@ -156,7 +159,7 @@ public class WebInterfaceTest {
 		assertThat(content, containsString("<html lang=\"en\">"));
 		assertThat(content, containsString("<title>WebGen report</title>"));
 		assertThat(content, containsString("<thead><tr><th>Title</th><th>Data inputs</th><th>Data outputs</th></tr></thead>"));
-		assertThat(content, containsString("<tr><td><a href=\"main_page.html\">Main page</a></td><td>10</td><td>10</td></tr>"));
+		assertThat(content, containsString("<tr><td><a href=\"main_page.html\">Main page</a></td><td>11</td><td>11</td></tr>"));
 		assertThat(content, containsString("<tr><td><a href=\"new_official_document.html\">New official document</a></td><td>4</td><td>7</td></tr>"));
 	}
 
@@ -182,6 +185,9 @@ public class WebInterfaceTest {
 	}
 
 	private String getSpecification(String resourceName) {
-		return new TextUtil().extractText(getClass().getResourceAsStream(resourceName)).replace("(XML=/references.xml)", "(XML=" + getClass().getResource("/references.xml") + ")");
+		String specification = new TextUtil().extractText(getClass().getResourceAsStream(resourceName));
+		specification = specification.replace("(XML=/references.xml)", "(XML=" + getClass().getResource("/references.xml") + ")");
+		specification = specification.replace("(XML=/countries.xml)", "(XML=" + getClass().getResource("/countries.xml") + ")");
+		return specification;
 	}
 }
