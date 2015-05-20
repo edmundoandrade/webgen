@@ -37,15 +37,12 @@ public class WebInterface {
 	protected String charSet = "UTF-8";
 
 	/**
-	 * WebInterface to be expressed into a set of web artifacts according to the
-	 * specification and the optional data.
+	 * WebInterface to be expressed into a set of web artifacts according to the specification and the optional data.
 	 * 
 	 * @param specification
-	 *            the specification, expressed as wiki text, for generating the
-	 *            web artifacts
+	 *            the specification, expressed as wiki text, for generating the web artifacts
 	 * @param dataDictionary
-	 *            optional data dictionary for configuring the behavior of data
-	 *            entry and/or presenting
+	 *            optional data dictionary for configuring the behavior of data entry and/or presenting
 	 * @param defaultLanguage
 	 *            the main language in which the web artifacts will be generated
 	 * @param templatesDir
@@ -115,22 +112,18 @@ public class WebInterface {
 	}
 
 	/**
-	 * WebInterface to be expressed into a set of web artifacts according to the
-	 * specification and the optional data.
+	 * WebInterface to be expressed into a set of web artifacts according to the specification and the optional data.
 	 * 
 	 * @param specificationStream
-	 *            stream for loading the specification expressed as wiki text,
-	 *            will be closed after this operation
+	 *            stream for loading the specification expressed as wiki text, will be closed after this operation
 	 * @param dataDicionaryStream
-	 *            optional stream for loading the data dictionary expressed as
-	 *            wiki text, will be closed after this operation
+	 *            optional stream for loading the data dictionary expressed as wiki text, will be closed after this operation
 	 * @param defaultLanguage
 	 *            the main language in which the web artifacts will be generated
 	 * @param templatesDir
 	 *            the directory for overriding the built-in templates
 	 * @param dataStream
-	 *            the stream for loading (sample) data expressed as XML, will be
-	 *            closed after this operation
+	 *            the stream for loading (sample) data expressed as XML, will be closed after this operation
 	 */
 	public WebInterface(InputStream specificationStream, InputStream dataDicionaryStream, String defaultLanguage, File templatesDir, InputStream dataStream) {
 		this(extractText(specificationStream), extractText(dataDicionaryStream), defaultLanguage, templatesDir, extractText(dataStream));
@@ -205,7 +198,11 @@ public class WebInterface {
 			separator = LINE_BREAK;
 		}
 		for (WebArtifact artifact : artifacts)
-			artifact.setContent(artifact.getContent().replaceAll("\\$\\{automenu:menu-item\\}", Matcher.quoteReplacement(autoMenu)));
+			artifact.setContent(artifact.getContent().replaceAll("\\$\\{automenu:menu-item\\}", Matcher.quoteReplacement(setActiveMenu(autoMenu, artifact))));
+	}
+
+	private String setActiveMenu(String content, WebArtifact artifact) {
+		return content.replace("<li><a href=\"" + artifact.getFileName() + "\">", "<li class=\"active\"><a href=\"" + artifact.getFileName() + "\">");
 	}
 
 	private String resolveField(String field) {

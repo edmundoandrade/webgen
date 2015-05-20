@@ -143,14 +143,12 @@ public class WebInterfaceTest {
 
 	@Test
 	public void generateMenuItems() throws IOException {
-		String menuItem1 = "<li><a href=\"main_page.html\">Main page</a></li>";
-		String menuItem2 = "<li><a href=\"new_official_document.html\">New official document</a></li>";
 		String content = webInterface.getArtifacts().get(MAIN_PAGE).getContent();
-		assertThat(content, containsString(menuItem1));
-		assertThat(content, containsString(menuItem2));
+		assertThat(content, containsString("<li class=\"active\"><a href=\"main_page.html\">Main page</a></li>"));
+		assertThat(content, containsString("<li><a href=\"new_official_document.html\">New official document</a></li>"));
 		content = webInterface.getArtifacts().get(NEW_OFFICIAL_DOCUMENT).getContent();
-		assertThat(content, containsString(menuItem1));
-		assertThat(content, containsString(menuItem2));
+		assertThat(content, containsString("<li><a href=\"main_page.html\">Main page</a></li>"));
+		assertThat(content, containsString("<li class=\"active\"><a href=\"new_official_document.html\">New official document</a></li>"));
 	}
 
 	@Test

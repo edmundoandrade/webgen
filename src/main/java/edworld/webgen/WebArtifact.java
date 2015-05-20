@@ -63,7 +63,7 @@ public class WebArtifact {
 	}
 
 	public static String standardId(String context) {
-		return textUtil.removeDiacritics(context.toLowerCase()).replaceAll(" ", "_").replaceAll("[.,:;'\"?!]", "");
+		return textUtil.removeDiacritics(context.toLowerCase()).replaceAll("[ /\\\\]", "_").replaceAll("[.,:;'\"?!]", "");
 	}
 
 	public static String getTemplate(String templateName, File templatesDir) {
