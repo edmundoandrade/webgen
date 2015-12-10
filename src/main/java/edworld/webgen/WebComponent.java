@@ -11,7 +11,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import org.w3c.dom.Document;
 
 public class WebComponent {
-	protected static final String COMPONENT_REGEX = ".*\\{([^\\}]+)\\}(.*)";
+	protected static final String COMPONENT_REGEX = ".*?\\{(.+)\\}(.*)";
 	protected static final String PARAMETER_DELIMITER_REGEX = "\\|";
 	protected String type;
 	protected Document xmlData;
