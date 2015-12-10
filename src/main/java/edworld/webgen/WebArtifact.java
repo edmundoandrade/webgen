@@ -66,23 +66,32 @@ public class WebArtifact {
 		return textUtil.removeDiacritics(context.toLowerCase()).replaceAll("[ /\\\\]", "_").replaceAll("[.,:;'\"?!]", "");
 	}
 
-	public static String getTemplate(String templateName, File templatesDir) {
-		return getTemplate(templateName, ".html", templatesDir);
+	public static String getTemplate(String templateName, Map<String, String> replacements, File templatesDir) {
+		return getTemplate(templateName, replacements, ".html", templatesDir);
 	}
 
-	public static String getTemplate(String templateName, String templateExtension, File templatesDir) {
+	public static String getTemplate(String templateName, Map<String, String> replacements, String templateExtension, File templatesDir) {
 		String fileName = standardId(templateName) + templateExtension;
 		File templateFile = new File(templatesDir, fileName);
 		if (templateFile.exists())
 			try {
-				return textUtil.extractText(new FileInputStream(templateFile));
+				return applyReplacements(textUtil.extractText(new FileInputStream(templateFile)), replacements);
 			} catch (FileNotFoundException e) {
 				throw new IllegalArgumentException(e);
 			}
 		InputStream templateStream = WebArtifact.class.getResourceAsStream("/templates/" + fileName);
 		if (templateStream == null)
 			throw new IllegalArgumentException("Template resource not found: " + fileName);
-		return textUtil.extractText(templateStream);
+		return applyReplacements(textUtil.extractText(templateStream), replacements);
+	}
+
+	protected static String applyReplacements(String text, Map<String, String> replacements) {
+		if (replacements == null)
+			return text;
+		String result = text;
+		for (String key : replacements.keySet())
+			result = result.replaceAll("\\$\\{" + key + "\\}", Matcher.quoteReplacement(replacements.get(key)));
+		return result;
 	}
 
 	public String getTitle() {
@@ -145,13 +154,15 @@ public class WebArtifact {
 		WebComponent component = new WebComponent(line);
 		String id = createId(component);
 		String contentPlace = pushContext(id);
-		String content = getTemplate(component.getType(), templatesDir).replaceAll("\\$\\{id\\}", id).replaceAll("\\$\\{title\\}", Matcher.quoteReplacement(component.getTitle()));
+		String content = getTemplate(component.getType(), component.getReplacements(), templatesDir).replaceAll("\\$\\{id\\}", id).replaceAll("\\$\\{title\\}",
+				Matcher.quoteReplacement(component.getTitle()));
 		content = resolveHeader(id, component, content);
 		content = resolveData(id, component, content);
 		if (content.toLowerCase().contains("</form>") || content.toLowerCase().contains("</fieldset>"))
-			return content.replaceAll(CONTENT_REGEX, Matcher.quoteReplacement(generateInputFields(component.getParameters()) + contentPlace)) + LINE_BREAK;
+			content = content.replaceAll(CONTENT_REGEX, Matcher.quoteReplacement(generateInputFields(component.getParameters()) + contentPlace)) + LINE_BREAK;
 		else
-			return content.replaceAll(CONTENT_REGEX, Matcher.quoteReplacement(generateGenericContent(component.getParameters()) + contentPlace)) + LINE_BREAK;
+			content = content.replaceAll(CONTENT_REGEX, Matcher.quoteReplacement(generateGenericContent(component.getParameters()) + contentPlace)) + LINE_BREAK;
+		return content;
 	}
 
 	private String resolveData(String id, WebComponent component, String content) {
@@ -160,7 +171,7 @@ public class WebArtifact {
 		Matcher matcher = Pattern.compile(ITEM_TEMPLATE_REGEX).matcher(content);
 		while (matcher.find()) {
 			String[] templates = matcher.group(1).split("@", 2);
-			String rowTemplate = templates.length < 2 ? CONTENT_PLACE : getTemplate(templates[1], templatesDir);
+			String rowTemplate = templates.length < 2 ? CONTENT_PLACE : getTemplate(templates[1], null, templatesDir);
 			content = content.replaceAll("\\$\\{data:" + matcher.group(1) + "\\}", Matcher.quoteReplacement(buildComponentData(templates[0], id, component, rowTemplate)));
 		}
 		return content;
@@ -183,7 +194,7 @@ public class WebArtifact {
 		Matcher matcher = Pattern.compile(HEADER_TEMPLATE_REGEX).matcher(content);
 		while (matcher.find()) {
 			String[] templates = matcher.group(1).split("@", 2);
-			String rowTemplate = templates.length < 2 ? CONTENT_PLACE : getTemplate(templates[1], templatesDir);
+			String rowTemplate = templates.length < 2 ? CONTENT_PLACE : getTemplate(templates[1], null, templatesDir);
 			content = content.replaceAll("\\$\\{header:" + matcher.group(1) + "\\}", Matcher.quoteReplacement(buildComponentHeader(templates[0], component, rowTemplate)));
 		}
 		return content;
@@ -200,20 +211,12 @@ public class WebArtifact {
 		dataInputs++;
 		String title = field;
 		String id = createId(title);
-		String[] inputParts = getInput(field).split("[()]");
-		String templateName = inputParts[0];
-		if (inputParts.length > 1 && inputParts[1].startsWith("XML=")) {
-			templateName += "(" + inputParts[1] + ")";
-			inputParts[1] = "";
-		}
-		WebComponent component = new WebComponent("{" + templateName + " " + title + "}");
-		String result = resolveData(id, component, getTemplate(component.getType(), templatesDir).replaceAll("\\$\\{id\\}", quote(id)).replaceAll("\\$\\{title\\}", title)
-				.replaceAll("\\$\\{description\\}", quote(description)).replaceAll("\\$\\{placeholder\\}", quote(placeHolder)).replaceAll("\\$\\{value\\}", quote(value)));
-		for (int i = 1; i < inputParts.length; i++)
-			if (inputParts[i].contains("=")) {
-				String[] definitionParts = inputParts[i].split("=");
-				result = result.replaceAll("\\$\\{" + definitionParts[0].trim() + "\\}", Matcher.quoteReplacement(definitionParts[1].trim()));
-			}
+		WebComponent component = new WebComponent("{" + getInput(field) + " " + title + "}");
+		String result = resolveData(
+				id,
+				component,
+				getTemplate(component.getType(), component.getReplacements(), templatesDir).replaceAll("\\$\\{id\\}", quote(id)).replaceAll("\\$\\{title\\}", title)
+						.replaceAll("\\$\\{description\\}", quote(description)).replaceAll("\\$\\{placeholder\\}", quote(placeHolder)).replaceAll("\\$\\{value\\}", quote(value)));
 		return removeVariablesNotReplaced(result);
 	}
 
@@ -301,7 +304,7 @@ public class WebArtifact {
 	}
 
 	private String generateComponentItem(String templateName, String title) {
-		String content = getTemplate(templateName, templatesDir);
+		String content = getTemplate(templateName, null, templatesDir);
 		if (content.contains(ID_PLACE))
 			content = content.replaceAll("\\$\\{id\\}", createId(title));
 		return content.replaceAll("\\$\\{title\\}", Matcher.quoteReplacement(title));

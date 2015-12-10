@@ -1,6 +1,8 @@
 // This open source code is distributed without warranties according to the license published at http://www.apache.org/licenses/LICENSE-2.0
 package edworld.webgen;
 
+import static edworld.webgen.WebArtifact.getTemplate;
+
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
@@ -152,7 +154,7 @@ public class WebInterface {
 		String data = "<" + WebArtifact.standardId(getWebGenReportTitle()) + ">" + LINE_BREAK;
 		data += buildArtifactTableData() + LINE_BREAK;
 		data += "</" + WebArtifact.standardId(getWebGenReportTitle()) + ">";
-		WebInterface webReports = new WebInterface(WebArtifact.getTemplate("webgen-reporting-specification", ".wiki", templatesDir), null, defaultLanguage, templatesDir, data);
+		WebInterface webReports = new WebInterface(getTemplate("webgen-reporting-specification", null, ".wiki", templatesDir), null, defaultLanguage, templatesDir, data);
 		webReports.generateArtifacts();
 		reports = webReports.getArtifacts();
 	}
@@ -185,7 +187,7 @@ public class WebInterface {
 	}
 
 	private String generateWebPage(String title, String lang) {
-		return WebArtifact.getTemplate("web-page", templatesDir).replaceAll("\\$\\{lang\\}", lang).replaceAll("\\$\\{title\\}", title);
+		return getTemplate("web-page", null, templatesDir).replaceAll("\\$\\{lang\\}", lang).replaceAll("\\$\\{title\\}", title);
 	}
 
 	private void autoMenu() {
@@ -193,8 +195,8 @@ public class WebInterface {
 		String separator = "";
 		for (WebArtifact artifact : artifacts) {
 			autoMenu += separator
-					+ WebArtifact.getTemplate("menu-item", templatesDir).replaceAll("\\$\\{url\\}", Matcher.quoteReplacement(artifact.getFileName()))
-							.replaceAll("\\$\\{title\\}", Matcher.quoteReplacement(artifact.getTitle()));
+					+ getTemplate("menu-item", null, templatesDir).replaceAll("\\$\\{url\\}", Matcher.quoteReplacement(artifact.getFileName())).replaceAll("\\$\\{title\\}",
+							Matcher.quoteReplacement(artifact.getTitle()));
 			separator = LINE_BREAK;
 		}
 		for (WebArtifact artifact : artifacts)
