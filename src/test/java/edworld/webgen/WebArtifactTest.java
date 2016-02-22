@@ -21,7 +21,8 @@ public class WebArtifactTest {
 		replacements.put("description", "This is a description.");
 		replacements.put("customSelectClasses", "");
 		replacements.put("customLabelClasses", "");
-		Assert.assertEquals("<label title=\"This is a description.\" class=\"form-group \">${title}<select id=\"${id}\" class=\"\">${data:select-item}</select></label>",
+		Assert.assertEquals(
+				"<label title=\"This is a description.\" class=\"form-group \">${title}<select id=\"${id}\" class=\"\">${data:select-item}</select></label>",
 				WebArtifact.getTemplate("select", replacements, new File("target/web-templates")));
 	}
 
@@ -29,5 +30,7 @@ public class WebArtifactTest {
 	public void standardId() {
 		Assert.assertEquals("a_complex_name_title", WebArtifact.standardId("a complex\\name/title?."));
 		Assert.assertEquals("date_time", WebArtifact.standardId(":Date/Time;"));
+		Assert.assertEquals("ab", WebArtifact.standardId("a.b"));
+		Assert.assertEquals("_", WebArtifact.standardId("."));
 	}
 }

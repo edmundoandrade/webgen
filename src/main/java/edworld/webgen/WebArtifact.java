@@ -51,7 +51,8 @@ public class WebArtifact {
 	protected Stack<String> parentContext = new Stack<String>();
 	protected List<String> components = new ArrayList<String>();
 
-	public WebArtifact(String title, String content, String fileName, Map<String, String> dataBehavior, Map<String, String> dataAlias, File templatesDir, Document data) {
+	public WebArtifact(String title, String content, String fileName, Map<String, String> dataBehavior,
+			Map<String, String> dataAlias, File templatesDir, Document data) {
 		this.title = title;
 		this.content = content;
 		this.fileName = fileName;
@@ -63,14 +64,17 @@ public class WebArtifact {
 	}
 
 	public static String standardId(String context) {
-		return textUtil.removeDiacritics(context.toLowerCase()).replaceAll("[ /\\\\]", "_").replaceAll("[.,:;'\"?!]", "");
+		String result = textUtil.removeDiacritics(context.toLowerCase()).replaceAll("[ /\\\\]", "_")
+				.replaceAll("[.,:;'\"?!]", "");
+		return result.isEmpty() ? "_" : result;
 	}
 
 	public static String getTemplate(String templateName, Map<String, String> replacements, File templatesDir) {
 		return getTemplate(templateName, replacements, ".html", templatesDir);
 	}
 
-	public static String getTemplate(String templateName, Map<String, String> replacements, String templateExtension, File templatesDir) {
+	public static String getTemplate(String templateName, Map<String, String> replacements, String templateExtension,
+			File templatesDir) {
 		String fileName = standardId(templateName) + templateExtension;
 		File templateFile = new File(templatesDir, fileName);
 		if (templateFile.exists())
@@ -154,14 +158,19 @@ public class WebArtifact {
 		WebComponent component = new WebComponent(line);
 		String id = createId(component);
 		String contentPlace = pushContext(id);
-		String content = getTemplate(component.getType(), component.getReplacements(), templatesDir).replaceAll("\\$\\{id\\}", id).replaceAll("\\$\\{title\\}",
-				Matcher.quoteReplacement(component.getTitle()));
+		String content = getTemplate(component.getType(), component.getReplacements(), templatesDir)
+				.replaceAll("\\$\\{id\\}", id)
+				.replaceAll("\\$\\{title\\}", Matcher.quoteReplacement(component.getTitle()));
 		content = resolveHeader(id, component, content);
 		content = resolveData(id, component, content);
 		if (content.toLowerCase().contains("</form>") || content.toLowerCase().contains("</fieldset>"))
-			content = content.replaceAll(CONTENT_REGEX, Matcher.quoteReplacement(generateInputFields(component.getParameters()) + contentPlace)) + LINE_BREAK;
+			content = content.replaceAll(CONTENT_REGEX,
+					Matcher.quoteReplacement(generateInputFields(component.getParameters()) + contentPlace))
+					+ LINE_BREAK;
 		else
-			content = content.replaceAll(CONTENT_REGEX, Matcher.quoteReplacement(generateGenericContent(component.getParameters()) + contentPlace)) + LINE_BREAK;
+			content = content.replaceAll(CONTENT_REGEX,
+					Matcher.quoteReplacement(generateGenericContent(component.getParameters()) + contentPlace))
+					+ LINE_BREAK;
 		return content;
 	}
 
@@ -172,7 +181,8 @@ public class WebArtifact {
 		while (matcher.find()) {
 			String[] templates = matcher.group(1).split("@", 2);
 			String rowTemplate = templates.length < 2 ? CONTENT_PLACE : getTemplate(templates[1], null, templatesDir);
-			content = content.replaceAll("\\$\\{data:" + matcher.group(1) + "\\}", Matcher.quoteReplacement(buildComponentData(templates[0], id, component, rowTemplate)));
+			content = content.replaceAll("\\$\\{data:" + matcher.group(1) + "\\}",
+					Matcher.quoteReplacement(buildComponentData(templates[0], id, component, rowTemplate)));
 		}
 		return content;
 	}
@@ -195,7 +205,8 @@ public class WebArtifact {
 		while (matcher.find()) {
 			String[] templates = matcher.group(1).split("@", 2);
 			String rowTemplate = templates.length < 2 ? CONTENT_PLACE : getTemplate(templates[1], null, templatesDir);
-			content = content.replaceAll("\\$\\{header:" + matcher.group(1) + "\\}", Matcher.quoteReplacement(buildComponentHeader(templates[0], component, rowTemplate)));
+			content = content.replaceAll("\\$\\{header:" + matcher.group(1) + "\\}",
+					Matcher.quoteReplacement(buildComponentHeader(templates[0], component, rowTemplate)));
 		}
 		return content;
 	}
@@ -212,11 +223,12 @@ public class WebArtifact {
 		String title = field;
 		String id = createId(title);
 		WebComponent component = new WebComponent("{" + getInput(field) + " " + title + "}");
-		String result = resolveData(
-				id,
-				component,
-				getTemplate(component.getType(), component.getReplacements(), templatesDir).replaceAll("\\$\\{id\\}", quote(id)).replaceAll("\\$\\{title\\}", title)
-						.replaceAll("\\$\\{description\\}", quote(description)).replaceAll("\\$\\{placeholder\\}", quote(placeHolder)).replaceAll("\\$\\{value\\}", quote(value)));
+		String result = resolveData(id, component,
+				getTemplate(component.getType(), component.getReplacements(), templatesDir)
+						.replaceAll("\\$\\{id\\}", quote(id)).replaceAll("\\$\\{title\\}", title)
+						.replaceAll("\\$\\{description\\}", quote(description))
+						.replaceAll("\\$\\{placeholder\\}", quote(placeHolder))
+						.replaceAll("\\$\\{value\\}", quote(value)));
 		return removeVariablesNotReplaced(result);
 	}
 
@@ -274,16 +286,19 @@ public class WebArtifact {
 			return new Node[] { dataItem };
 		Node[] cells = new Node[fields.length];
 		for (int i = 0; i < cells.length; i++)
-			cells[i] = (Node) xpath.compile(standardId(parameterName(fields[i]))).evaluate(dataItem, XPathConstants.NODE);
+			cells[i] = (Node) xpath.compile(standardId(parameterName(fields[i]))).evaluate(dataItem,
+					XPathConstants.NODE);
 		return cells;
 	}
 
 	private String generateComponentItem(String templateName, Node dataField) throws XPathExpressionException {
 		String content = generateComponentItem(templateName, dataField == null ? "" : dataField.getTextContent());
 		for (String attributeName : attributeRefs(content))
-			content = content.replaceAll("\\$\\{attribute:" + attributeName + "\\}", Matcher.quoteReplacement(attribute(dataField, attributeName)));
+			content = content.replaceAll("\\$\\{attribute:" + attributeName + "\\}",
+					Matcher.quoteReplacement(attribute(dataField, attributeName)));
 		for (String elementName : elementRefs(content))
-			content = content.replaceAll("\\$\\{element:" + elementName + "\\}", Matcher.quoteReplacement(element(dataField, elementName)));
+			content = content.replaceAll("\\$\\{element:" + elementName + "\\}",
+					Matcher.quoteReplacement(element(dataField, elementName)));
 		return content;
 	}
 
@@ -322,9 +337,11 @@ public class WebArtifact {
 		return rows;
 	}
 
-	private NodeList dataRows(String dataContext, String dataId, WebComponent component, XPath xpath) throws XPathExpressionException {
+	private NodeList dataRows(String dataContext, String dataId, WebComponent component, XPath xpath)
+			throws XPathExpressionException {
 		if (component.getXmlData() == null)
-			return (NodeList) xpath.compile("//" + standardId(dataContext) + "/" + dataId + "/*").evaluate(data, XPathConstants.NODESET);
+			return (NodeList) xpath.compile("//" + standardId(dataContext) + "/" + dataId + "/*").evaluate(data,
+					XPathConstants.NODESET);
 		else
 			return (NodeList) xpath.compile("*/*").evaluate(component.getXmlData(), XPathConstants.NODESET);
 	}
@@ -417,7 +434,8 @@ public class WebArtifact {
 	}
 
 	public void removeAllEmptyCaptions() {
-		setContent(getContent().replaceAll("<legend></legend>", "").replaceAll("<caption></caption>", "").replaceAll("<h2[^>]*></h2>", ""));
+		setContent(getContent().replaceAll("<legend></legend>", "").replaceAll("<caption></caption>", "")
+				.replaceAll("<h2[^>]*></h2>", ""));
 	}
 
 	public void removeAllEmptyAttributes() {
