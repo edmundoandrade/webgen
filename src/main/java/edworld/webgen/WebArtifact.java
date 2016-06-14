@@ -32,6 +32,8 @@ public class WebArtifact {
 	protected static final String ATTRIBUTE_REGEX = "\\$\\{attribute:([^\\}]+)\\}";
 	protected static final String ELEMENT_REGEX = "\\$\\{element:([^\\}]+)\\}";
 	protected static final String ID_PLACE = "${id}";
+	protected static final String NAME_PLACE = "${name}";
+	protected static final String TITLE_PLACE = "${title}";
 	protected static final String DEFAULT_DATA_CONTEXT = "default";
 	protected static final String PROP_DESCRIPTION = "description";
 	protected static final String PROP_PLACEHOLDER = "placeholder";
@@ -158,9 +160,8 @@ public class WebArtifact {
 		WebComponent component = new WebComponent(line);
 		String id = createId(component);
 		String contentPlace = pushContext(id);
-		String content = getTemplate(component.getType(), component.getReplacements(), templatesDir)
-				.replaceAll("\\$\\{id\\}", id)
-				.replaceAll("\\$\\{title\\}", Matcher.quoteReplacement(component.getTitle()));
+		String content = fillMetaData(getTemplate(component.getType(), component.getReplacements(), templatesDir), id,
+				component.getTitle());
 		content = resolveHeader(id, component, content);
 		content = resolveData(id, component, content);
 		if (content.toLowerCase().contains("</form>") || content.toLowerCase().contains("</fieldset>"))
@@ -224,11 +225,10 @@ public class WebArtifact {
 		String id = createId(title);
 		WebComponent component = new WebComponent("{" + getInput(field) + " " + title + "}");
 		String result = resolveData(id, component,
-				getTemplate(component.getType(), component.getReplacements(), templatesDir)
-						.replaceAll("\\$\\{id\\}", quote(id)).replaceAll("\\$\\{title\\}", title)
-						.replaceAll("\\$\\{description\\}", quote(description))
-						.replaceAll("\\$\\{placeholder\\}", quote(placeHolder))
-						.replaceAll("\\$\\{value\\}", quote(value)));
+				fillMetaData(getTemplate(component.getType(), component.getReplacements(), templatesDir), quote(id),
+						title).replaceAll("\\$\\{description\\}", quote(description))
+								.replaceAll("\\$\\{placeholder\\}", quote(placeHolder))
+								.replaceAll("\\$\\{value\\}", quote(value)));
 		return removeVariablesNotReplaced(result);
 	}
 
@@ -319,10 +319,18 @@ public class WebArtifact {
 	}
 
 	private String generateComponentItem(String templateName, String title) {
-		String content = getTemplate(templateName, null, templatesDir);
+		return fillMetaData(getTemplate(templateName, null, templatesDir), null, title);
+	}
+
+	private String fillMetaData(String text, String id, String title) {
+		String content = text;
 		if (content.contains(ID_PLACE))
-			content = content.replaceAll("\\$\\{id\\}", createId(title));
-		return content.replaceAll("\\$\\{title\\}", Matcher.quoteReplacement(title));
+			content = content.replace(ID_PLACE, id == null ? createId(title) : id);
+		if (content.contains(NAME_PLACE))
+			content = content.replace(NAME_PLACE, standardId(title));
+		if (content.contains(TITLE_PLACE))
+			content = content.replace(TITLE_PLACE, Matcher.quoteReplacement(title));
+		return content;
 	}
 
 	private NodeList dataRows(String id, WebComponent component, XPath xpath) throws XPathExpressionException {
