@@ -360,7 +360,7 @@ public class WebArtifact {
 	}
 
 	private Node attributeNode(Node dataItem, String attributeName) {
-		if (!dataItem.hasAttributes())
+		if (dataItem == null || !dataItem.hasAttributes())
 			return null;
 		return dataItem.getAttributes().getNamedItem(attributeName);
 	}
