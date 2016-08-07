@@ -49,18 +49,20 @@ public class WebArtifact {
 	protected Map<String, String> dataBehavior;
 	protected Map<String, String> dataAlias;
 	protected File templatesDir;
+	protected ClassLoader templateClassLoader;
 	protected Document data;
 	protected Stack<String> parentContext = new Stack<String>();
 	protected List<String> components = new ArrayList<String>();
 
 	public WebArtifact(String title, String content, String fileName, Map<String, String> dataBehavior,
-			Map<String, String> dataAlias, File templatesDir, Document data) {
+			Map<String, String> dataAlias, File templatesDir, ClassLoader templateClassLoader, Document data) {
 		this.title = title;
 		this.content = content;
 		this.fileName = fileName;
 		this.dataBehavior = dataBehavior;
 		this.dataAlias = dataAlias;
 		this.templatesDir = templatesDir;
+		this.templateClassLoader = templateClassLoader;
 		this.data = data;
 		parentContext.push(CONTENT_PLACE);
 	}
@@ -71,12 +73,13 @@ public class WebArtifact {
 		return result.isEmpty() ? "_" : result;
 	}
 
-	public static String getTemplate(String templateName, Map<String, String> replacements, File templatesDir) {
-		return getTemplate(templateName, replacements, ".html", templatesDir);
+	public static String getTemplate(String templateName, Map<String, String> replacements, File templatesDir,
+			ClassLoader templateClassLoader) {
+		return getTemplate(templateName, replacements, ".html", templatesDir, templateClassLoader);
 	}
 
 	public static String getTemplate(String templateName, Map<String, String> replacements, String templateExtension,
-			File templatesDir) {
+			File templatesDir, ClassLoader templateClassLoader) {
 		String fileName = standardId(templateName) + templateExtension;
 		File templateFile = new File(templatesDir, fileName);
 		if (templateFile.exists())
@@ -85,7 +88,11 @@ public class WebArtifact {
 			} catch (FileNotFoundException e) {
 				throw new IllegalArgumentException(e);
 			}
-		InputStream templateStream = WebArtifact.class.getResourceAsStream("/templates/" + fileName);
+		InputStream templateStream;
+		if (templateClassLoader == null)
+			templateStream = WebInterface.class.getResourceAsStream("/templates/" + fileName);
+		else
+			templateStream = templateClassLoader.getResourceAsStream("/templates/" + fileName);
 		if (templateStream == null)
 			throw new IllegalArgumentException("Template resource not found: " + fileName);
 		return applyReplacements(textUtil.extractText(templateStream), replacements);
@@ -160,7 +167,8 @@ public class WebArtifact {
 		WebComponent component = new WebComponent(line);
 		String id = createId(component);
 		String contentPlace = pushContext(id);
-		String content = fillMetaData(getTemplate(component.getType(), component.getReplacements(), templatesDir), id,
+		String content = fillMetaData(
+				getTemplate(component.getType(), component.getReplacements(), templatesDir, templateClassLoader), id,
 				component.getTitle());
 		content = resolveHeader(id, component, content);
 		content = resolveData(id, component, content);
@@ -181,7 +189,8 @@ public class WebArtifact {
 		Matcher matcher = Pattern.compile(ITEM_TEMPLATE_REGEX).matcher(content);
 		while (matcher.find()) {
 			String[] templates = matcher.group(1).split("@", 2);
-			String rowTemplate = templates.length < 2 ? CONTENT_PLACE : getTemplate(templates[1], null, templatesDir);
+			String rowTemplate = templates.length < 2 ? CONTENT_PLACE
+					: getTemplate(templates[1], null, templatesDir, templateClassLoader);
 			content = content.replaceAll("\\$\\{data:" + matcher.group(1) + "\\}",
 					Matcher.quoteReplacement(buildComponentData(templates[0], id, component, rowTemplate)));
 		}
@@ -205,7 +214,8 @@ public class WebArtifact {
 		Matcher matcher = Pattern.compile(HEADER_TEMPLATE_REGEX).matcher(content);
 		while (matcher.find()) {
 			String[] templates = matcher.group(1).split("@", 2);
-			String rowTemplate = templates.length < 2 ? CONTENT_PLACE : getTemplate(templates[1], null, templatesDir);
+			String rowTemplate = templates.length < 2 ? CONTENT_PLACE
+					: getTemplate(templates[1], null, templatesDir, templateClassLoader);
 			content = content.replaceAll("\\$\\{header:" + matcher.group(1) + "\\}",
 					Matcher.quoteReplacement(buildComponentHeader(templates[0], component, rowTemplate)));
 		}
@@ -225,8 +235,8 @@ public class WebArtifact {
 		String id = createId(title);
 		WebComponent component = new WebComponent("{" + getInput(field) + " " + title + "}");
 		String result = resolveData(id, component,
-				fillMetaData(getTemplate(component.getType(), component.getReplacements(), templatesDir), quote(id),
-						title).replaceAll("\\$\\{description\\}", quote(description))
+				fillMetaData(getTemplate(component.getType(), component.getReplacements(), templatesDir,
+						templateClassLoader), quote(id), title).replaceAll("\\$\\{description\\}", quote(description))
 								.replaceAll("\\$\\{placeholder\\}", quote(placeHolder))
 								.replaceAll("\\$\\{value\\}", quote(value)));
 		return removeVariablesNotReplaced(result);
@@ -319,7 +329,7 @@ public class WebArtifact {
 	}
 
 	private String generateComponentItem(String templateName, String title) {
-		return fillMetaData(getTemplate(templateName, null, templatesDir), null, title);
+		return fillMetaData(getTemplate(templateName, null, templatesDir, templateClassLoader), null, title);
 	}
 
 	private String fillMetaData(String text, String id, String title) {

@@ -12,7 +12,7 @@ import org.junit.Test;
 public class WebArtifactTest {
 	@Test(expected = IllegalArgumentException.class)
 	public void getInvalidTemplate() throws IOException {
-		WebArtifact.getTemplate("invalid-template", null, new File("target/web-templates"));
+		WebArtifact.getTemplate("invalid-template", null, new File("target/web-templates"), null);
 	}
 
 	@Test
@@ -23,7 +23,7 @@ public class WebArtifactTest {
 		replacements.put("customLabelClasses", "");
 		Assert.assertEquals(
 				"<label title=\"This is a description.\" class=\"form-group \">${title}<select id=\"${id}\" class=\"\">${data:select-item}</select></label>",
-				WebArtifact.getTemplate("select", replacements, new File("target/web-templates")));
+				WebArtifact.getTemplate("select", replacements, new File("target/web-templates"), null));
 	}
 
 	@Test
