@@ -15,9 +15,15 @@ public class WebComponent {
 	protected static final String PARAMETER_DELIMITER_REGEX = "\\|";
 	protected String type;
 	protected Document xmlData;
-	protected Map<String, String> replacements = new HashMap<String, String>();;
+	protected Map<String, String> replacements = new HashMap<>();
 	protected String title;
 	protected String[] parameters;
+
+	public static WebComponent toWebComponent(String expression) {
+		if (expression.startsWith("((") && expression.endsWith(")"))
+			return new WebComponent("{" + expression.substring(1, expression.length() - 1) + "}");
+		return null;
+	}
 
 	public WebComponent(String line) {
 		Matcher matcher = Pattern.compile(COMPONENT_REGEX).matcher(line);

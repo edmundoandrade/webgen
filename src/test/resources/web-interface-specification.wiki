@@ -10,7 +10,7 @@ Any information put before first mark below has one aim: human reading.
 * {Seção Seção X}
 ** {Filtro F} FEntrada1 | Filtro entrada dois
 *** {Ação Filtrar}
-** {Tabela} TCab1 | TCab2 | TCab3
+** {Tabela} TCab1 | TCab2 | ((class=text-right) TCab3)
 ** {Ação Ação alfa}
 * <hr>free HTML content<hr>
 

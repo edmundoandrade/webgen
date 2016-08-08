@@ -82,9 +82,10 @@ public class WebInterfaceTest {
 				"<tr><td>NONONONX</td><td>NONONONY</td><td>NONONONZ</td><td><a href=\"#section_a\">Click</a></td></tr>"));
 		assertThat(content, containsString(
 				"<tr><td>HOHOHOHA</td><td class=\"row\" data-title=\"t2\">HOHOHOHB</td><td>HOHOHOHC</td><td><a href=\"#secao_x\">Click</a></td></tr>"));
-		assertThat(content, containsString("<thead><tr><th>TCab1</th><th>TCab2</th><th>TCab3</th></tr></thead>"));
-		assertThat(content,
-				containsString("<tr><td><a href=\"#\">Item 1</a></td><td>NONONONY</td><td>NONONONZ</td></tr>"));
+		assertThat(content, containsString(
+				"<thead><tr><th>TCab1</th><th>TCab2</th><th class=\"text-right\">TCab3</th></tr></thead>"));
+		assertThat(content, containsString(
+				"<tr><td><a href=\"#\">Item 1</a></td><td>NONONONY</td><td class=\"text-right\">NONONONZ</td></tr>"));
 		content = webInterface.getArtifacts().get(NEW_OFFICIAL_DOCUMENT).getContent();
 		assertThat(content, containsString("<tr><td><a href=\"#Book\">Book</a></td><td>101</td><td>2003</td></tr>"));
 		assertThat(content,

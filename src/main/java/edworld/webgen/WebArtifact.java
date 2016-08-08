@@ -255,8 +255,13 @@ public class WebArtifact {
 
 	private String buildComponentHeader(String itemTemplate, WebComponent component, String rowTemplate) {
 		String content = "";
-		for (String parameter : component.getParameters())
-			content += generateComponentItem(itemTemplate + parameterSuffix(parameter), parameterName(parameter));
+		for (String parameter : component.getParameters()) {
+			WebComponent parameterComponent = WebComponent.toWebComponent(parameter);
+			String name = parameterComponent == null ? parameter : parameterComponent.getTitle();
+			Map<String, String> replacements = parameterComponent == null ? null : parameterComponent.getReplacements();
+			content += generateComponentItem(itemTemplate + parameterSuffix(parameter), parameterName(name),
+					replacements, false);
+		}
 		return rowTemplate.replaceAll(CONTENT_REGEX, Matcher.quoteReplacement(content));
 	}
 
@@ -295,20 +300,41 @@ public class WebArtifact {
 		if (fields.length == 0)
 			return new Node[] { dataItem };
 		Node[] cells = new Node[fields.length];
-		for (int i = 0; i < cells.length; i++)
-			cells[i] = (Node) xpath.compile(standardId(parameterName(fields[i]))).evaluate(dataItem,
+		for (int i = 0; i < cells.length; i++) {
+			WebComponent component = WebComponent.toWebComponent(fields[i]);
+			String fieldName = component == null ? fields[i] : component.getTitle();
+			Map<String, String> replacements = component == null ? null : component.getReplacements();
+			cells[i] = (Node) xpath.compile(standardId(parameterName(fieldName))).evaluate(dataItem,
 					XPathConstants.NODE);
+			if (replacements != null && cells[i] != null)
+				cells[i].setUserData("replacements", replacements, null);
+		}
 		return cells;
 	}
 
 	private String generateComponentItem(String templateName, Node dataField) throws XPathExpressionException {
-		String content = generateComponentItem(templateName, dataField == null ? "" : dataField.getTextContent());
+		@SuppressWarnings("unchecked")
+		Map<String, String> replacements = dataField == null ? null
+				: (Map<String, String>) dataField.getUserData("replacements");
+		String content = generateComponentItem(templateName, dataField == null ? "" : dataField.getTextContent(),
+				replacements, true);
 		for (String attributeName : attributeRefs(content))
-			content = content.replaceAll("\\$\\{attribute:" + attributeName + "\\}",
+			content = content.replaceAll("\\s*\\$\\{attribute:" + attributeName + "\\}",
 					Matcher.quoteReplacement(attribute(dataField, attributeName)));
 		for (String elementName : elementRefs(content))
 			content = content.replaceAll("\\$\\{element:" + elementName + "\\}",
 					Matcher.quoteReplacement(element(dataField, elementName)));
+		return content;
+	}
+
+	private String generateComponentItem(String templateName, String title, Map<String, String> replacements,
+			boolean additiveReplacement) {
+		String content = fillMetaData(getTemplate(templateName, null, templatesDir, templateClassLoader), null, title);
+		for (String attributeName : attributeRefs(content)) {
+			String suffix = additiveReplacement ? " ${attribute:" + attributeName + "}" : "";
+			content = content.replaceAll("\\s*\\$\\{attribute:" + attributeName + "\\}",
+					Matcher.quoteReplacement(attribute(replacements, attributeName) + suffix));
+		}
 		return content;
 	}
 
@@ -326,10 +352,6 @@ public class WebArtifact {
 		while (matcher.find())
 			lista.add(matcher.group(1).trim());
 		return lista;
-	}
-
-	private String generateComponentItem(String templateName, String title) {
-		return fillMetaData(getTemplate(templateName, null, templatesDir, templateClassLoader), null, title);
 	}
 
 	private String fillMetaData(String text, String id, String title) {
@@ -367,6 +389,12 @@ public class WebArtifact {
 	private String attribute(Node dataItem, String attributeName) {
 		Node node = attributeNode(dataItem, attributeName);
 		return node == null ? "" : node.getNodeValue();
+	}
+
+	private String attribute(Map<String, String> replacements, String attributeName) {
+		if (replacements == null || !replacements.containsKey(attributeName))
+			return "";
+		return replacements.get(attributeName);
 	}
 
 	private Node attributeNode(Node dataItem, String attributeName) {
@@ -457,6 +485,6 @@ public class WebArtifact {
 	}
 
 	public void removeAllEmptyAttributes() {
-		setContent(getContent().replaceAll("\\s*[a-z\\-_]*=\"\"", ""));
+		setContent(getContent().replaceAll("\\s*[a-z\\-_]*=\"\\s*\"", ""));
 	}
 }
