@@ -1,10 +1,6 @@
 // This open source code is distributed without warranties according to the license published at http://www.apache.org/licenses/LICENSE-2.0
 package edworld.webgen;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -48,63 +44,21 @@ public class WebArtifact {
 	private int dataOutputs;
 	protected Map<String, String> dataBehavior;
 	protected Map<String, String> dataAlias;
-	protected File templatesDir;
-	protected ClassLoader templateClassLoader;
+	private WebTemplateFinder templateFinder;
 	protected Document data;
 	protected Stack<String> parentContext = new Stack<String>();
 	protected List<String> components = new ArrayList<String>();
 
 	public WebArtifact(String title, String content, String fileName, Map<String, String> dataBehavior,
-			Map<String, String> dataAlias, File templatesDir, ClassLoader templateClassLoader, Document data) {
+			Map<String, String> dataAlias, WebTemplateFinder templateFinder, Document data) {
 		this.title = title;
 		this.content = content;
 		this.fileName = fileName;
 		this.dataBehavior = dataBehavior;
 		this.dataAlias = dataAlias;
-		this.templatesDir = templatesDir;
-		this.templateClassLoader = templateClassLoader;
+		this.templateFinder = templateFinder;
 		this.data = data;
 		parentContext.push(CONTENT_PLACE);
-	}
-
-	public static String standardId(String context) {
-		String result = textUtil.removeDiacritics(context.toLowerCase()).replaceAll("[ /\\\\]", "_")
-				.replaceAll("[.,:;'\"?!]", "");
-		return result.isEmpty() ? "_" : result;
-	}
-
-	public static String getTemplate(String templateName, Map<String, String> replacements, File templatesDir,
-			ClassLoader templateClassLoader) {
-		return getTemplate(templateName, replacements, ".html", templatesDir, templateClassLoader);
-	}
-
-	public static String getTemplate(String templateName, Map<String, String> replacements, String templateExtension,
-			File templatesDir, ClassLoader templateClassLoader) {
-		String fileName = standardId(templateName) + templateExtension;
-		File templateFile = new File(templatesDir, fileName);
-		if (templateFile.exists())
-			try {
-				return applyReplacements(textUtil.extractText(new FileInputStream(templateFile)), replacements);
-			} catch (FileNotFoundException e) {
-				throw new IllegalArgumentException(e);
-			}
-		InputStream templateStream;
-		if (templateClassLoader == null)
-			templateStream = WebInterface.class.getResourceAsStream("/templates/" + fileName);
-		else
-			templateStream = templateClassLoader.getResourceAsStream("/templates/" + fileName);
-		if (templateStream == null)
-			throw new IllegalArgumentException("Template resource not found: " + fileName);
-		return applyReplacements(textUtil.extractText(templateStream), replacements);
-	}
-
-	protected static String applyReplacements(String text, Map<String, String> replacements) {
-		if (replacements == null)
-			return text;
-		String result = text;
-		for (String key : replacements.keySet())
-			result = result.replaceAll("\\$\\{" + key + "\\}", Matcher.quoteReplacement(replacements.get(key)));
-		return result;
 	}
 
 	public String getTitle() {
@@ -167,8 +121,7 @@ public class WebArtifact {
 		WebComponent component = new WebComponent(line);
 		String id = createId(component);
 		String contentPlace = pushContext(id);
-		String content = fillMetaData(
-				getTemplate(component.getType(), component.getReplacements(), templatesDir, templateClassLoader), id,
+		String content = fillMetaData(templateFinder.getTemplate(component.getType(), component.getReplacements()), id,
 				component.getTitle());
 		content = resolveHeader(id, component, content);
 		content = resolveData(id, component, content);
@@ -189,8 +142,7 @@ public class WebArtifact {
 		Matcher matcher = Pattern.compile(ITEM_TEMPLATE_REGEX).matcher(content);
 		while (matcher.find()) {
 			String[] templates = matcher.group(1).split("@", 2);
-			String rowTemplate = templates.length < 2 ? CONTENT_PLACE
-					: getTemplate(templates[1], null, templatesDir, templateClassLoader);
+			String rowTemplate = templates.length < 2 ? CONTENT_PLACE : templateFinder.getTemplate(templates[1], null);
 			content = content.replaceAll("\\$\\{data:" + matcher.group(1) + "\\}",
 					Matcher.quoteReplacement(buildComponentData(templates[0], id, component, rowTemplate)));
 		}
@@ -202,7 +154,7 @@ public class WebArtifact {
 		XPath xpath = XPathFactory.newInstance().newXPath();
 		try {
 			if (component.getXmlData() == null)
-				return xpath.compile("//" + standardId(getTitle()) + "/" + dataId + "/text()").evaluate(data);
+				return xpath.compile("//" + textUtil.standardId(getTitle()) + "/" + dataId + "/text()").evaluate(data);
 			else
 				return xpath.compile("//" + dataId + "/text()").evaluate(component.getXmlData());
 		} catch (XPathExpressionException e) {
@@ -214,8 +166,7 @@ public class WebArtifact {
 		Matcher matcher = Pattern.compile(HEADER_TEMPLATE_REGEX).matcher(content);
 		while (matcher.find()) {
 			String[] templates = matcher.group(1).split("@", 2);
-			String rowTemplate = templates.length < 2 ? CONTENT_PLACE
-					: getTemplate(templates[1], null, templatesDir, templateClassLoader);
+			String rowTemplate = templates.length < 2 ? CONTENT_PLACE : templateFinder.getTemplate(templates[1], null);
 			content = content.replaceAll("\\$\\{header:" + matcher.group(1) + "\\}",
 					Matcher.quoteReplacement(buildComponentHeader(templates[0], component, rowTemplate)));
 		}
@@ -235,8 +186,8 @@ public class WebArtifact {
 		String id = createId(title);
 		WebComponent component = new WebComponent("{" + getInput(field) + " " + title + "}");
 		String result = resolveData(id, component,
-				fillMetaData(getTemplate(component.getType(), component.getReplacements(), templatesDir,
-						templateClassLoader), quote(id), title).replaceAll("\\$\\{description\\}", quote(description))
+				fillMetaData(templateFinder.getTemplate(component.getType(), component.getReplacements()), quote(id),
+						title).replaceAll("\\$\\{description\\}", quote(description))
 								.replaceAll("\\$\\{placeholder\\}", quote(placeHolder))
 								.replaceAll("\\$\\{value\\}", quote(value)));
 		return removeVariablesNotReplaced(result);
@@ -304,7 +255,7 @@ public class WebArtifact {
 			WebComponent component = WebComponent.toWebComponent(fields[i]);
 			String fieldName = component == null ? fields[i] : component.getTitle();
 			Map<String, String> replacements = component == null ? null : component.getReplacements();
-			cells[i] = (Node) xpath.compile(standardId(parameterName(fieldName))).evaluate(dataItem,
+			cells[i] = (Node) xpath.compile(textUtil.standardId(parameterName(fieldName))).evaluate(dataItem,
 					XPathConstants.NODE);
 			if (replacements != null && cells[i] != null)
 				cells[i].setUserData("replacements", replacements, null);
@@ -329,7 +280,7 @@ public class WebArtifact {
 
 	private String generateComponentItem(String templateName, String title, Map<String, String> replacements,
 			boolean additiveReplacement) {
-		String content = fillMetaData(getTemplate(templateName, null, templatesDir, templateClassLoader), null, title);
+		String content = fillMetaData(templateFinder.getTemplate(templateName, null), null, title);
 		for (String attributeName : attributeRefs(content)) {
 			String suffix = additiveReplacement ? " ${attribute:" + attributeName + "}" : "";
 			content = content.replaceAll("\\s*\\$\\{attribute:" + attributeName + "\\}",
@@ -359,14 +310,14 @@ public class WebArtifact {
 		if (content.contains(ID_PLACE))
 			content = content.replace(ID_PLACE, id == null ? createId(title) : id);
 		if (content.contains(NAME_PLACE))
-			content = content.replace(NAME_PLACE, standardId(title));
+			content = content.replace(NAME_PLACE, textUtil.standardId(title));
 		if (content.contains(TITLE_PLACE))
 			content = content.replace(TITLE_PLACE, Matcher.quoteReplacement(title));
 		return content;
 	}
 
 	private NodeList dataRows(String id, WebComponent component, XPath xpath) throws XPathExpressionException {
-		boolean checkTitle = !component.getTitle().isEmpty() && !id.equals(standardId(component.getTitle()));
+		boolean checkTitle = !component.getTitle().isEmpty() && !id.equals(textUtil.standardId(component.getTitle()));
 		NodeList rows = dataRows(getTitle(), id, component, xpath);
 		if (rows.getLength() == 0 && checkTitle)
 			rows = dataRows(getTitle(), component.getTitle(), component, xpath);
@@ -380,8 +331,8 @@ public class WebArtifact {
 	private NodeList dataRows(String dataContext, String dataId, WebComponent component, XPath xpath)
 			throws XPathExpressionException {
 		if (component.getXmlData() == null)
-			return (NodeList) xpath.compile("//" + standardId(dataContext) + "/" + dataId + "/*").evaluate(data,
-					XPathConstants.NODESET);
+			return (NodeList) xpath.compile("//" + textUtil.standardId(dataContext) + "/" + dataId + "/*")
+					.evaluate(data, XPathConstants.NODESET);
 		else
 			return (NodeList) xpath.compile("*/*").evaluate(component.getXmlData(), XPathConstants.NODESET);
 	}
@@ -448,7 +399,7 @@ public class WebArtifact {
 	}
 
 	protected String createId(String context) {
-		String id = standardId(context);
+		String id = textUtil.standardId(context);
 		if (components.contains(id)) {
 			int seq = 1;
 			while (components.contains(id + "_" + seq))
@@ -460,7 +411,8 @@ public class WebArtifact {
 	}
 
 	protected String createId(WebComponent component) {
-		String id = standardId(component.getTitle().isEmpty() ? "_" + component.getType() : component.getTitle());
+		String id = textUtil
+				.standardId(component.getTitle().isEmpty() ? "_" + component.getType() : component.getTitle());
 		if (components.contains(id)) {
 			int seq = 1;
 			while (components.contains(id + "_" + seq))

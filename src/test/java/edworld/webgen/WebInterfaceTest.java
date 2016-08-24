@@ -22,9 +22,9 @@ public class WebInterfaceTest {
 
 	@Before
 	public void setUp() throws IOException {
+		WebTemplateFinder templateFinder = new WebTemplateFinder(new File("target/web-templates"));
 		webInterface = new WebInterface(getSpecification("/web-interface-specification.wiki"),
-				getSpecification("/data-dictionary.wiki"), "en", new File("target/web-templates"),
-				getSpecification("/sample-data.xml"));
+				getSpecification("/data-dictionary.wiki"), "en", templateFinder, getSpecification("/sample-data.xml"));
 		webInterface.generateArtifacts();
 	}
 

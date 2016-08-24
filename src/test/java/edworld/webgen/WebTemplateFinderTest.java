@@ -7,12 +7,20 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
-public class WebArtifactTest {
+public class WebTemplateFinderTest {
+	private WebTemplateFinder templateFinder;
+
+	@Before
+	public void setUp() {
+		templateFinder = new WebTemplateFinder(new File("target/web-templates"));
+	}
+
 	@Test(expected = IllegalArgumentException.class)
 	public void getInvalidTemplate() throws IOException {
-		WebArtifact.getTemplate("invalid-template", null, new File("target/web-templates"), null);
+		templateFinder.getTemplate("invalid-template", null);
 	}
 
 	@Test
@@ -23,14 +31,6 @@ public class WebArtifactTest {
 		replacements.put("customLabelClasses", "");
 		Assert.assertEquals(
 				"<label title=\"This is a description.\" class=\"form-group \">${title}<select id=\"${id}\" class=\"\">${data:select-item}</select></label>",
-				WebArtifact.getTemplate("select", replacements, new File("target/web-templates"), null));
-	}
-
-	@Test
-	public void standardId() {
-		Assert.assertEquals("a_complex_name_title", WebArtifact.standardId("a complex\\name/title?."));
-		Assert.assertEquals("date_time", WebArtifact.standardId(":Date/Time;"));
-		Assert.assertEquals("ab", WebArtifact.standardId("a.b"));
-		Assert.assertEquals("_", WebArtifact.standardId("."));
+				templateFinder.getTemplate("select", replacements));
 	}
 }

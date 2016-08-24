@@ -1,8 +1,6 @@
 // This open source code is distributed without warranties according to the license published at http://www.apache.org/licenses/LICENSE-2.0
 package edworld.webgen;
 
-import static edworld.webgen.WebArtifact.getTemplate;
-
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
@@ -24,11 +22,11 @@ import edworld.util.TextUtil;
 public class WebInterface {
 	protected static final String PROP_DESCRIPTION = "description";
 	protected static final String LINE_BREAK = System.getProperty("line.separator");
+	protected static TextUtil textUtil = new TextUtil();
 
 	protected String specification;
 	protected String defaultLanguage;
-	protected File templatesDir;
-	protected ClassLoader templateClassLoader;
+	protected WebTemplateFinder templateFinder;
 	protected Document data;
 	protected String webGenReportTitle = "WebGen report";
 	protected List<WebArtifact> artifacts = new ArrayList<WebArtifact>();
@@ -51,17 +49,17 @@ public class WebInterface {
 	 *            entry and/or presenting
 	 * @param defaultLanguage
 	 *            the main language in which the web artifacts will be generated
-	 * @param templatesDir
-	 *            the directory used to override the built-in templates
+	 * @param templateFinder
+	 *            a custom finder for locating/overriding built-in templates
 	 * @param data
 	 *            optional (sample) data expressed as XML
 	 */
-	public WebInterface(String specification, String dataDictionary, String defaultLanguage, File templatesDir,
-			String data) {
+	public WebInterface(String specification, String dataDictionary, String defaultLanguage,
+			WebTemplateFinder templateFinder, String data) {
 		this.specification = specification;
 		loadDataBehavior(dataDictionary);
 		this.defaultLanguage = defaultLanguage;
-		this.templatesDir = templatesDir;
+		this.templateFinder = templateFinder;
 		if (data == null) {
 			this.data = null;
 			return;
@@ -131,24 +129,20 @@ public class WebInterface {
 	 *            wiki text, will be closed after this operation
 	 * @param defaultLanguage
 	 *            the main language in which the web artifacts will be generated
-	 * @param templatesDir
-	 *            the directory for overriding the built-in templates
+	 * @param templateFinder
+	 *            a custom finder for locating/overriding built-in templates
 	 * @param dataStream
 	 *            the stream for loading (sample) data expressed as XML, will be
 	 *            closed after this operation
 	 */
 	public WebInterface(InputStream specificationStream, InputStream dataDicionaryStream, String defaultLanguage,
-			File templatesDir, InputStream dataStream) {
-		this(extractText(specificationStream), extractText(dataDicionaryStream), defaultLanguage, templatesDir,
+			WebTemplateFinder templateFinder, InputStream dataStream) {
+		this(extractText(specificationStream), extractText(dataDicionaryStream), defaultLanguage, templateFinder,
 				extractText(dataStream));
 	}
 
 	private static String extractText(InputStream stream) {
 		return new TextUtil().extractText(stream);
-	}
-
-	public void setTemplateClassLoader(ClassLoader templateClassLoader) {
-		this.templateClassLoader = templateClassLoader;
 	}
 
 	public void generateArtifacts() {
@@ -166,13 +160,13 @@ public class WebInterface {
 		reports = null;
 	}
 
-	private void generateReports() {
-		String data = "<" + WebArtifact.standardId(getWebGenReportTitle()) + ">" + LINE_BREAK;
+	protected void generateReports() {
+		String data = "<" + textUtil.standardId(getWebGenReportTitle()) + ">" + LINE_BREAK;
 		data += buildArtifactTableData() + LINE_BREAK;
-		data += "</" + WebArtifact.standardId(getWebGenReportTitle()) + ">";
+		data += "</" + textUtil.standardId(getWebGenReportTitle()) + ">";
 		WebInterface webReports = new WebInterface(
-				getTemplate("webgen-reporting-specification", null, ".wiki", templatesDir, templateClassLoader), null,
-				defaultLanguage, templatesDir, data);
+				templateFinder.getTemplate("webgen-reporting-specification", null, ".wiki"), null, defaultLanguage,
+				templateFinder, data);
 		webReports.generateArtifacts();
 		reports = webReports.getArtifacts();
 	}
@@ -195,12 +189,11 @@ public class WebInterface {
 		return "<a href=\"" + link + "\">" + text + "</a>";
 	}
 
-	private boolean newArtifact(String line) {
+	protected boolean newArtifact(String line) {
 		if (line.matches("\\s*==[^=].*")) {
 			String title = line.replaceAll("==", "").trim();
 			currentArtifact = new WebArtifact(title, generateWebPage(title, defaultLanguage),
-					WebArtifact.standardId(title) + ".html", dataBehavior, dataAlias, templatesDir, templateClassLoader,
-					data);
+					textUtil.standardId(title) + ".html", dataBehavior, dataAlias, templateFinder, data);
 			artifacts.add(currentArtifact);
 			return true;
 		}
@@ -208,7 +201,7 @@ public class WebInterface {
 	}
 
 	private String generateWebPage(String title, String lang) {
-		return getTemplate("web-page", null, templatesDir, templateClassLoader).replaceAll("\\$\\{lang\\}", lang)
+		return templateFinder.getTemplate("web-page", null).replaceAll("\\$\\{lang\\}", lang)
 				.replaceAll("\\$\\{title\\}", title);
 	}
 
@@ -216,7 +209,7 @@ public class WebInterface {
 		String autoMenu = "";
 		String separator = "";
 		for (WebArtifact artifact : artifacts) {
-			autoMenu += separator + getTemplate("menu-item", null, templatesDir, templateClassLoader)
+			autoMenu += separator + templateFinder.getTemplate("menu-item", null)
 					.replaceAll("\\$\\{url\\}", Matcher.quoteReplacement(artifact.getFileName()))
 					.replaceAll("\\$\\{title\\}", Matcher.quoteReplacement(artifact.getTitle()));
 			separator = LINE_BREAK;

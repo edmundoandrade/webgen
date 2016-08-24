@@ -18,4 +18,10 @@ public class TextUtil {
 	public String removeDiacritics(String text) {
 		return Normalizer.normalize(text, Normalizer.Form.NFD).replaceAll("[^\\p{ASCII}]", "");
 	}
+
+	public String standardId(String context) {
+		String result = removeDiacritics(context.toLowerCase()).replaceAll("[ /\\\\]", "_").replaceAll("[.,:;'\"?!]",
+				"");
+		return result.isEmpty() ? "_" : result;
+	}
 }
