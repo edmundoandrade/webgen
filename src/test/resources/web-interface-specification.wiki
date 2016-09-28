@@ -17,7 +17,7 @@ Any information put before first mark below has one aim: human reading.
 == New official document ==
 * {Menu}
 * {Form(action=${id}.html) Basic information} Name | Document type | Owner
-** {Action insert document}
+** {BrazilianDateInput Date}
 ** {Action insert document}
 * {List My list}
 * {Section Dashboard}

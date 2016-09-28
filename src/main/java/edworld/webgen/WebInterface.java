@@ -153,6 +153,7 @@ public class WebInterface {
 				currentArtifact.updateArtifact(line);
 		autoMenu();
 		for (WebArtifact artifact : artifacts) {
+			artifact.consolidateHeadElements();
 			artifact.removeAllContentPlaces();
 			artifact.removeAllEmptyCaptions();
 			artifact.removeAllEmptyAttributes();

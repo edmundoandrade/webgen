@@ -46,7 +46,7 @@ public class WebComponent {
 				}
 			for (int i = 1; i < parts.length; i++)
 				if (parts[i].contains("=")) {
-					String[] definitionParts = parts[i].split("=");
+					String[] definitionParts = parts[i].split("=", 2);
 					replacements.put(definitionParts[0].trim(), definitionParts[1].trim());
 				}
 			parameters = extractParameters(matcher.group(2).trim());

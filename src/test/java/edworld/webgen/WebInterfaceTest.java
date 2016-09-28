@@ -120,6 +120,16 @@ public class WebInterfaceTest {
 		assertThat(content, containsString("<label>Owner<input type=\"text\" id=\"owner\"></label>"));
 	}
 
+	@Test
+	public void generateBrazilianDateInput() {
+		String content = webInterface.getArtifacts().get(NEW_OFFICIAL_DOCUMENT).getContent();
+		content = content.replace("[[date]]", "28/09/2016");
+		assertThat(content, containsString(
+				"<label>Date<input type=\"text\" id=\"date\" name=\"date\" value=\"28/09/2016\"></label>"));
+		assertThat(content.replaceAll("[\\n\\r]+", ""), containsString(
+				"<script src=\"https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.6.4/locales/bootstrap-datepicker.pt-BR.min.js\" charset=\"UTF-8\"></script></head><body>"));
+	}
+
 	private String documentTypeOptions() {
 		String lineSep = System.getProperty("line.separator");
 		return "<option>(Undefined document)</option>" + lineSep + "<option value=\"int\">Internal document</option>"

@@ -27,6 +27,8 @@ public class WebArtifact {
 	protected static final String HEADER_TEMPLATE_REGEX = "\\$\\{header:([^\\}]+)\\}";
 	protected static final String ATTRIBUTE_REGEX = "\\$\\{attribute:([^\\}]+)\\}";
 	protected static final String ELEMENT_REGEX = "\\$\\{element:([^\\}]+)\\}";
+	protected static final String HEADER_ELEMENTS_REGEX = "(?is)<head>[\\r\\n]*(.*?)</head>[\\r\\n]*";
+	protected static final String INPUT_ELEMENTS_REGEX = "(?is)<(button|input|select) ";
 	protected static final String ID_PLACE = "${id}";
 	protected static final String NAME_PLACE = "${name}";
 	protected static final String TITLE_PLACE = "${title}";
@@ -112,7 +114,8 @@ public class WebArtifact {
 	}
 
 	private String apply(String component, String parent, String place) {
-		if (component.toLowerCase().contains("</button>"))
+		Matcher matcher = Pattern.compile(INPUT_ELEMENTS_REGEX).matcher(component);
+		while (matcher.find())
 			dataInputs++;
 		return parent.replace(place, component + place);
 	}
@@ -181,7 +184,7 @@ public class WebArtifact {
 	}
 
 	private String generateTextInput(String field, String description, String placeHolder, String value) {
-		dataInputs++;
+		// dataInputs++;
 		String title = field;
 		String id = createId(title);
 		WebComponent component = new WebComponent("{" + getInput(field) + " " + title + "}");
@@ -438,5 +441,22 @@ public class WebArtifact {
 
 	public void removeAllEmptyAttributes() {
 		setContent(getContent().replaceAll("\\s*[a-z\\-_]*=\"\\s*\"", ""));
+	}
+
+	public void consolidateHeadElements() {
+		String result = getContent();
+		Matcher matcher = Pattern.compile(HEADER_ELEMENTS_REGEX).matcher(result);
+		if (matcher.find()) {
+			String consolidated = LINE_BREAK + matcher.group(1);
+			boolean headExpanded = false;
+			while (matcher.find())
+				if (!consolidated.contains(matcher.group(1))) {
+					consolidated += matcher.group(1);
+					headExpanded = true;
+					result = result.replace(matcher.group(), "");
+				}
+			if (headExpanded)
+				setContent(result.replaceAll(HEADER_ELEMENTS_REGEX, "<head>" + consolidated + "</head>" + LINE_BREAK));
+		}
 	}
 }

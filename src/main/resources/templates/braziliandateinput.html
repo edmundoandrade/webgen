@@ -1,0 +1,10 @@
+<head>
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.6.4/css/bootstrap-datepicker3.min.css">
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.6.4/js/bootstrap-datepicker.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.6.4/locales/bootstrap-datepicker.pt-BR.min.js" charset="UTF-8"></script>
+</head>
+<div>
+	<label>${title}<input type="text" id="${id}" name="${name}" value="[[date]]"></label>
+	<script>$('#${id}').datepicker({clearBtn: true, language: "pt-BR", todayHighlight: true	});</script>
+</div>
