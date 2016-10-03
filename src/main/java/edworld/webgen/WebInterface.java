@@ -15,6 +15,7 @@ import java.util.regex.Pattern;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 
+import org.apache.commons.lang3.StringEscapeUtils;
 import org.w3c.dom.Document;
 
 import edworld.util.TextUtil;
@@ -66,7 +67,7 @@ public class WebInterface {
 		}
 		try {
 			this.data = DocumentBuilderFactory.newInstance().newDocumentBuilder()
-					.parse(new ByteArrayInputStream(data.getBytes(charSet)));
+					.parse(new ByteArrayInputStream(StringEscapeUtils.unescapeHtml4(data).getBytes(charSet)));
 		} catch (Exception e) {
 			throw new IllegalArgumentException(e);
 		}
