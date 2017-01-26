@@ -79,7 +79,7 @@ public class WebInterfaceTest {
 		assertThat(content, containsString(
 				"<thead><tr><th>THeader1</th><th>THeader2</th><th>THeader3</th><th>THeader4</th></tr></thead>"));
 		assertThat(content, containsString(
-				"<tr><td>NONONONX</td><td>NONONONY</td><td>NONONONZ</td><td><a href=\"#section_a\">Click</a></td></tr>"));
+				"<tr><td>NONONONX</td><td>NONONONY</td><td>NONONONZ</td><td><a href=\"#section_a\">Click$</a></td></tr>"));
 		assertThat(content, containsString(
 				"<tr><td>HOHOHOHA</td><td class=\"row\" data-title=\"t2\">HOHOHOHB</td><td>HOHOHOHC</td><td><a href=\"#secao_x\">Click</a></td></tr>"));
 		assertThat(content, containsString(

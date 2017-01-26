@@ -315,7 +315,7 @@ public class WebArtifact {
 		if (content.contains(NAME_PLACE))
 			content = content.replace(NAME_PLACE, textUtil.standardId(title));
 		if (content.contains(TITLE_PLACE))
-			content = content.replace(TITLE_PLACE, Matcher.quoteReplacement(title));
+			content = content.replace(TITLE_PLACE, title);
 		return content;
 	}
 
