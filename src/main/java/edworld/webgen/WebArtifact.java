@@ -334,7 +334,8 @@ public class WebArtifact {
 	private NodeList dataRows(String dataContext, String dataId, WebComponent component, XPath xpath)
 			throws XPathExpressionException {
 		if (component.getXmlData() == null)
-			return (NodeList) xpath.compile("//" + textUtil.standardId(dataContext) + "/" + dataId + "/*")
+			return (NodeList) xpath
+					.compile("//" + textUtil.standardId(dataContext) + "/" + textUtil.standardId(dataId) + "/*")
 					.evaluate(data, XPathConstants.NODESET);
 		else
 			return (NodeList) xpath.compile("*/*").evaluate(component.getXmlData(), XPathConstants.NODESET);
